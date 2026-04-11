@@ -12,71 +12,83 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
         .eq('status', 'active')
         .single()
 
+    if (error || !ilan) notFound()
+
     const fotograflar = ilan.listing_media ?? []
     const anaFoto = fotograflar.find((f: any) => f.is_primary)?.media_url
 
     return (
-        <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem' }}>
+        <main className="min-h-screen bg-gray-50">
 
-            {/* Geri butonu */}
-            <a href="/" style={{ color: '#666', textDecoration: 'none' }}>← Tüm İlanlara Dön</a>
+            {/* Üst bar */}
+            <nav className="bg-white border-b border-gray-200 px-6 py-4">
+                <div className="max-w-4xl mx-auto">
+                    <a href="/" className="text-blue-600 hover:text-blue-700 text-sm no-underline">← Tüm İlanlara Dön</a>
+                </div>
+            </nav>
 
-            {/* Ana fotoğraf */}
-            {anaFoto && (
-                <img
-                    src={anaFoto}
-                    alt={ilan.name}
-                    style={{ width: '100%', height: '400px', objectFit: 'cover', borderRadius: '12px', marginTop: '1rem' }}
-                />
-            )}
+            <div className="max-w-4xl mx-auto px-6 py-8">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
 
-            {/* Başlık */}
-            <h1 style={{ marginTop: '1.5rem' }}>{ilan.name}</h1>
+                    {/* Ana fotoğraf */}
+                    {anaFoto ? (
+                        <img src={anaFoto} alt={ilan.name} className="w-full h-96 object-cover" />
+                    ) : (
+                        <div className="w-full h-96 bg-gray-100 flex items-center justify-center text-7xl">🐾</div>
+                    )}
 
-            {/* Temel bilgiler */}
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem', color: '#555' }}>
-                <span>🐾 {ilan.pet_type}</span>
-                <span>⚥ {ilan.gender}</span>
-                <span>🗓 {ilan.age_months} aylık</span>
-                {ilan.breed && <span>🏷 {ilan.breed}</span>}
-                <span>📍 {ilan.city}{ilan.district ? `, ${ilan.district}` : ''}</span>
-            </div>
+                    {/* Diğer fotoğraflar */}
+                    {fotograflar.length > 1 && (
+                        <div className="flex gap-2 p-4 overflow-x-auto">
+                            {fotograflar.map((f: any, i: number) => (
+                                <img key={i} src={f.media_url} alt="" className="w-24 h-24 object-cover rounded-lg flex-shrink-0 cursor-pointer" />
+                            ))}
+                        </div>
+                    )}
 
-            {/* Açıklama */}
-            <p style={{ marginTop: '1.5rem', lineHeight: '1.7' }}>{ilan.description}</p>
+                    <div className="p-6">
 
-            {/* Sağlık durumu */}
-            <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#f9f9f9', borderRadius: '8px' }}>
-                <h3>Sağlık Durumu</h3>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-                    {ilan.health_status?.vaccinated && <span style={{ background: '#d4edda', padding: '4px 10px', borderRadius: '20px', fontSize: '0.85rem' }}>✅ Aşılı</span>}
-                    {ilan.health_status?.neutered && <span style={{ background: '#d4edda', padding: '4px 10px', borderRadius: '20px', fontSize: '0.85rem' }}>✅ Kısırlaştırılmış</span>}
-                    {ilan.health_status?.dewormed && <span style={{ background: '#d4edda', padding: '4px 10px', borderRadius: '20px', fontSize: '0.85rem' }}>✅ Parazit Tedavisi</span>}
-                    {ilan.health_status?.microchipped && <span style={{ background: '#d4edda', padding: '4px 10px', borderRadius: '20px', fontSize: '0.85rem' }}>✅ Mikroçipli</span>}
+                        {/* Başlık ve temel bilgiler */}
+                        <div className="flex justify-between items-start">
+                            <h1 className="text-3xl font-bold text-gray-900">{ilan.name}</h1>
+                            <span className="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full">Aktif</span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3 mt-3">
+                            <span className="bg-blue-50 text-blue-700 text-sm px-3 py-1 rounded-full">🐾 {ilan.pet_type}</span>
+                            <span className="bg-purple-50 text-purple-700 text-sm px-3 py-1 rounded-full">⚥ {ilan.gender}</span>
+                            <span className="bg-orange-50 text-orange-700 text-sm px-3 py-1 rounded-full">🗓 {ilan.age_months} aylık</span>
+                            {ilan.breed && <span className="bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full">🏷 {ilan.breed}</span>}
+                            <span className="bg-red-50 text-red-700 text-sm px-3 py-1 rounded-full">📍 {ilan.city}{ilan.district ? `, ${ilan.district}` : ''}</span>
+                        </div>
+
+                        {/* Açıklama */}
+                        <p className="text-gray-600 mt-6 leading-relaxed">{ilan.description}</p>
+
+                        {/* Sağlık durumu */}
+                        {ilan.health_status && Object.values(ilan.health_status).some(Boolean) && (
+                            <div className="mt-6 p-4 bg-gray-50 rounded-xl">
+                                <h3 className="font-semibold text-gray-900 mb-3">Sağlık Durumu</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {ilan.health_status.vaccinated && <span className="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full">✅ Aşılı</span>}
+                                    {ilan.health_status.neutered && <span className="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full">✅ Kısırlaştırılmış</span>}
+                                    {ilan.health_status.dewormed && <span className="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full">✅ Parazit Tedavisi</span>}
+                                    {ilan.health_status.microchipped && <span className="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full">✅ Mikroçipli</span>}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Mesaj butonu */}
+                        <a
+                            href={`/mesajlar/${ilan.id}`}
+                            className="mt-6 w-full bg-blue-600 text-white py-4 rounded-xl font-medium hover:bg-blue-700 transition-colors text-center block no-underline text-lg"
+                        >
+                            💬 Mesaj Gönder
+                        </a>
+
+                    </div>
                 </div>
             </div>
-
-
-
-            {/* Mesaj butonu */}
-            <a href={`/mesajlar/${ilan.id}`} style={{
-                marginTop: '1.5rem',
-                display: 'block',
-                width: '100%',
-                padding: '1rem',
-                background: '#2563eb',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '1rem',
-                cursor: 'pointer',
-                textAlign: 'center',
-                textDecoration: 'none',
-                boxSizing: 'border-box' as any,
-            }}>
-                💬 Mesaj Gönder
-            </a>
-
-        </main>
+        </main >
     )
 }

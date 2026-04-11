@@ -34,43 +34,58 @@ export default function Giris() {
     }
 
     return (
-        <main style={{ maxWidth: '400px', margin: '4rem auto', padding: '2rem', border: '1px solid #eee', borderRadius: '12px' }}>
-            <h1 style={{ marginBottom: '1.5rem' }}>🐾 Giriş Yap</h1>
+        <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-md">
 
-            <input
-                type="email"
-                placeholder="E-posta"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={{ width: '100%', padding: '0.75rem', marginBottom: '1rem', border: '1px solid #ccc', borderRadius: '8px', boxSizing: 'border-box' }}
-            />
+                <div className="text-center mb-8">
+                    <div className="text-5xl mb-3">🐾</div>
+                    <h1 className="text-2xl font-bold text-gray-900">PatternPaw'a Hoş Geldin</h1>
+                    <p className="text-gray-500 text-sm mt-1">Giriş yap veya yeni hesap oluştur</p>
+                </div>
 
-            <input
-                type="password"
-                placeholder="Şifre"
-                value={sifre}
-                onChange={(e) => setSifre(e.target.value)}
-                style={{ width: '100%', padding: '0.75rem', marginBottom: '1rem', border: '1px solid #ccc', borderRadius: '8px', boxSizing: 'border-box' }}
-            />
+                <input
+                    type="email"
+                    placeholder="E-posta"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg mb-3 text-sm focus:outline-none focus:border-blue-500"
+                />
 
-            {mesaj && <p style={{ color: mesaj.includes('Hata') ? 'red' : 'green', marginBottom: '1rem' }}>{mesaj}</p>}
+                <input
+                    type="password"
+                    placeholder="Şifre (min. 6 karakter)"
+                    value={sifre}
+                    onChange={(e) => setSifre(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && girisYap()}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg mb-4 text-sm focus:outline-none focus:border-blue-500"
+                />
 
-            <button
-                onClick={girisYap}
-                disabled={yukleniyor}
-                style={{ width: '100%', padding: '0.75rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', marginBottom: '0.5rem' }}
-            >
-                {yukleniyor ? 'Bekle...' : 'Giriş Yap'}
-            </button>
+                {mesaj && (
+                    <p className={`text-sm mb-4 ${mesaj.includes('Hata') ? 'text-red-500' : 'text-green-600'}`}>
+                        {mesaj}
+                    </p>
+                )}
 
-            <button
-                onClick={kayitOl}
-                disabled={yukleniyor}
-                style={{ width: '100%', padding: '0.75rem', background: 'white', color: '#2563eb', border: '1px solid #2563eb', borderRadius: '8px', cursor: 'pointer' }}
-            >
-                {yukleniyor ? 'Bekle...' : 'Kayıt Ol'}
-            </button>
+                <button
+                    onClick={girisYap}
+                    disabled={yukleniyor}
+                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors mb-3 disabled:opacity-50"
+                >
+                    {yukleniyor ? 'Bekle...' : 'Giriş Yap'}
+                </button>
 
+                <button
+                    onClick={kayitOl}
+                    disabled={yukleniyor}
+                    className="w-full bg-white text-blue-600 py-3 rounded-lg font-medium border border-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50"
+                >
+                    {yukleniyor ? 'Bekle...' : 'Yeni Hesap Oluştur'}
+                </button>
+
+                <p className="text-center text-gray-400 text-sm mt-6">
+                    <a href="/" className="hover:text-gray-600">← Ana sayfaya dön</a>
+                </p>
+            </div>
         </main>
     )
 }
