@@ -1,6 +1,10 @@
 import { createServerSupabase } from '@/lib/supabase-server'
 import { Suspense } from 'react'
+import Header from './components/Header'
+import BottomNav from './components/BottomNav'
 import Filtreler from './components/Filtreler'
+import PetCard from './components/PetCard'
+import Link from 'next/link'
 
 export default async function Home({
   searchParams,
@@ -24,76 +28,89 @@ export default async function Home({
   const { data: ilanlar, error } = await query
 
   if (error) {
-    return <p className="p-8 text-red-500">İlanlar yüklenirken hata oluştu.</p>
+    return <p className="p-8 text-error">İlanlar yüklenirken hata oluştu.</p>
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <>
+      {/* Header */}
+      <Header user={user} />
 
-      {/* Üst bar */}
-      <nav className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <a href="/" className="text-2xl font-bold text-blue-600 no-underline">🐾 PatternPaw</a>
-          <div className="flex gap-3 items-center">
-            {user ? (
-              <>
-                <a href="/profil" className="text-gray-600 hover:text-gray-900 no-underline text-sm">{user.email}</a>
-                <a href="/ilan-olustur" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm no-underline hover:bg-blue-700">+ İlan Ver</a>
-                <a href="/cikis" className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm no-underline hover:bg-red-100">Çıkış</a>
-              </>
-            ) : (
-              <a href="/giris" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm no-underline hover:bg-blue-700">Giriş Yap</a>
-            )}
+      <main className="pt-24 pb-32 md:pb-16 px-4 sm:px-6 lg:px-10 max-w-7xl mx-auto w-full">
+        {/* Hero Section */}
+        <section className="mb-10 md:mb-14 pt-4 md:pt-8">
+          <div className="max-w-2xl mx-auto text-center mb-8">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-on-surface mb-4 leading-tight font-headline">
+              Yeni{' '}
+              <span className="text-primary-container">can dostunu</span>{' '}
+              bul
+            </h2>
+            <p className="text-on-surface-variant text-base md:text-lg">
+              Seni bekleyen şefkatli sahiplendirme hikâyeleri.
+            </p>
           </div>
-        </div>
-      </nav>
 
-      {/* Hero */}
-      <div className="bg-blue-600 text-white py-12 px-6">
-        <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-4xl font-bold mb-3">Bir Can Dostuna Yuva Ol</h1>
-          <p className="text-blue-100 text-lg">Türkiye'nin en güvenilir hayvan sahiplendirme platformu</p>
-        </div>
-      </div>
+          <Suspense>
+            <Filtreler />
+          </Suspense>
+        </section>
 
-      {/* İçerik */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex justify-between items-center mb-4">
-          <p className="text-gray-500">{ilanlar.length} ilan bulundu</p>
+        {/* Results count */}
+        <div className="flex justify-between items-center mb-6">
+          <p className="text-on-surface-variant text-sm font-medium">
+            <span className="text-on-surface font-bold">{ilanlar.length}</span> ilan bulundu
+          </p>
         </div>
 
-        <Suspense>
-          <Filtreler />
-        </Suspense>
+        {/* Pet Grid */}
+        {ilanlar.length === 0 ? (
+          <div className="text-center py-20">
+            <span className="material-symbols-outlined text-6xl text-outline-variant mb-4 block">
+              search_off
+            </span>
+            <h3 className="text-xl font-bold font-headline text-on-surface mb-2">
+              Sonuç bulunamadı
+            </h3>
+            <p className="text-on-surface-variant">
+              Farklı filtreler deneyerek aradığın can dostunu bulabilirsin.
+            </p>
+          </div>
+        ) : (
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
+            {ilanlar.map((ilan: any, index: number) => {
+              const foto = ilan.listing_media?.find((m: any) => m.is_primary)?.media_url
 
-        {/* İlan grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-          {ilanlar.map((ilan) => {
-            const foto = ilan.listing_media?.find((m: any) => m.is_primary)?.media_url
+              return (
+                <PetCard
+                  key={ilan.id}
+                  id={ilan.id}
+                  name={ilan.name}
+                  petType={ilan.pet_type}
+                  gender={ilan.gender}
+                  city={ilan.city}
+                  district={ilan.district}
+                  ageMonths={ilan.age_months}
+                  description={ilan.description}
+                  photoUrl={foto}
+                  index={index}
+                />
+              )
+            })}
+          </section>
+        )}
+      </main>
 
-            return (
-              <a
-                key={ilan.id}
-                href={`/ilanlar/${ilan.id}`}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow no-underline text-inherit"
-              >
-                {foto ? (
-                  <img src={foto} alt={ilan.name} className="w-full h-52 object-cover" />
-                ) : (
-                  <div className="w-full h-52 bg-gray-100 flex items-center justify-center text-5xl">🐾</div>
-                )}
-                <div className="p-4">
-                  <h2 className="text-lg font-semibold text-gray-900">{ilan.name}</h2>
-                  <p className="text-gray-500 text-sm mt-1">🐾 {ilan.pet_type} · {ilan.gender}</p>
-                  <p className="text-gray-500 text-sm">📍 {ilan.city}{ilan.district ? `, ${ilan.district}` : ''}</p>
-                  <p className="text-gray-500 text-sm">🗓 {ilan.age_months} aylık</p>
-                  <p className="text-gray-600 text-sm mt-2 line-clamp-2">{ilan.description}</p>
-                </div>
-              </a>
-            )
-          })}
-        </div>
-      </div >
-    </main >
+      {/* Floating Action Button — Desktop */}
+      <Link
+        href="/ilan-olustur"
+        className="fixed bottom-10 right-10 bg-primary-container text-white p-4 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all hidden md:flex items-center gap-2 editorial-shadow no-underline z-40"
+      >
+        <span className="material-symbols-outlined">pets</span>
+        <span className="font-bold text-sm font-headline">İlan Oluştur</span>
+      </Link>
+
+      {/* Mobile Bottom Nav */}
+      <BottomNav />
+    </>
   )
 }

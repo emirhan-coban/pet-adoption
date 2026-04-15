@@ -1,94 +1,305 @@
-import { createClient } from '@/lib/supabase'
+import { createServerSupabase } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
+import Header from '../../components/Header'
+import BottomNav from '../../components/BottomNav'
+import ImageCarousel from '../../components/ImageCarousel'
+import Link from 'next/link'
+
+function formatAge(months: number): string {
+  if (months < 1) return 'Yavru'
+  if (months < 12) return `${months} Aylık`
+  const years = Math.floor(months / 12)
+  const remainingMonths = months % 12
+  if (remainingMonths === 0) return `${years} Yaş`
+  return `${years} Yıl ${remainingMonths} Ay`
+}
+
+function formatPetType(type: string): string {
+  switch (type) {
+    case 'dog': return 'Köpek'
+    case 'cat': return 'Kedi'
+    case 'bird': return 'Kuş'
+    case 'rabbit': return 'Tavşan'
+    default: return 'Diğer'
+  }
+}
+
+function formatGender(gender: string): string {
+  return gender === 'female' ? 'Dişi' : 'Erkek'
+}
+
+function getAgeLabel(months: number): string {
+  if (months < 6) return 'Yavru'
+  if (months < 24) return 'Genç'
+  return 'Yetişkin'
+}
 
 export default async function IlanDetay({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params
-    const supabase = createClient()
+  const { id } = await params
+  const supabase = await createServerSupabase()
 
-    const { data: ilan, error } = await supabase
-        .from('listings')
-        .select('*, listing_media(media_url, is_primary)')
-        .eq('id', id)
-        .eq('status', 'active')
-        .single()
+  const { data: { user } } = await supabase.auth.getUser()
 
-    if (error || !ilan) notFound()
+  const { data: ilan, error } = await supabase
+    .from('listings')
+    .select('*, listing_media(media_url, is_primary)')
+    .eq('id', id)
+    .eq('status', 'active')
+    .single()
 
-    const fotograflar = ilan.listing_media ?? []
-    const anaFoto = fotograflar.find((f: any) => f.is_primary)?.media_url
+  if (error || !ilan) notFound()
 
-    return (
-        <main className="min-h-screen bg-gray-50">
+  // Fetch poster info separately (may not have FK relationship)
+  let ilanSahibi: any = null
+  if (ilan.user_id) {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('full_name, trust_score')
+      .eq('id', ilan.user_id)
+      .single()
+    ilanSahibi = userData
+  }
 
-            {/* Üst bar */}
-            <nav className="bg-white border-b border-gray-200 px-6 py-4">
-                <div className="max-w-4xl mx-auto">
-                    <a href="/" className="text-blue-600 hover:text-blue-700 text-sm no-underline">← Tüm İlanlara Dön</a>
+  const fotograflar = ilan.listing_media ?? []
+  const tumFotolar = fotograflar.map((f: any) => f.media_url)
+  const healthStatus = ilan.health_status as any
+
+  // Health & personality traits
+  const traits: { icon: string; label: string; active: boolean }[] = [
+    { icon: 'vaccines', label: 'Aşılı', active: !!healthStatus?.vaccinated },
+    { icon: 'content_cut', label: 'Kısırlaştırılmış', active: !!healthStatus?.neutered },
+    { icon: 'pest_control', label: 'Parazit Tedavisi', active: !!healthStatus?.dewormed },
+    { icon: 'verified_user', label: 'Mikroçipli', active: !!healthStatus?.microchipped },
+  ]
+
+  const activeTraits = traits.filter((t) => t.active)
+
+  return (
+    <>
+      <Header user={user} />
+
+      <main className="pt-20 pb-32 md:pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
+        {/* Back link */}
+        <div className="mb-4 pt-2">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary transition-colors no-underline group"
+          >
+            <span className="material-symbols-outlined text-lg group-hover:-translate-x-0.5 transition-transform">
+              arrow_back
+            </span>
+            <span>İlanlara Dön</span>
+          </Link>
+        </div>
+
+        {/* Image Carousel */}
+        <ImageCarousel images={tumFotolar} alt={ilan.name} />
+
+        {/* Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+          {/* Main Details */}
+          <div className="lg:col-span-8 space-y-8">
+
+            {/* Title & Key Info */}
+            <div className="space-y-4">
+              <div className="flex flex-wrap justify-between items-end gap-4">
+                <div>
+                  <span className="text-primary font-bold tracking-widest text-[10px] uppercase block mb-2">
+                    Sahiplendirmeye Açık
+                  </span>
+                  <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold font-headline text-on-surface leading-none">
+                    {ilan.name}
+                  </h2>
                 </div>
-            </nav>
+                <div className="flex gap-2">
+                  <span className="bg-primary-container/10 text-on-primary-container px-4 py-2 rounded-full text-sm font-semibold">
+                    {getAgeLabel(ilan.age_months)}
+                  </span>
+                  <span className="bg-secondary-container/30 text-on-secondary-container px-4 py-2 rounded-full text-sm font-semibold">
+                    {formatGender(ilan.gender)}
+                  </span>
+                </div>
+              </div>
 
-            <div className="max-w-4xl mx-auto px-6 py-8">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-
-                    {/* Ana fotoğraf */}
-                    {anaFoto ? (
-                        <img src={anaFoto} alt={ilan.name} className="w-full h-96 object-cover" />
-                    ) : (
-                        <div className="w-full h-96 bg-gray-100 flex items-center justify-center text-7xl">🐾</div>
-                    )}
-
-                    {/* Diğer fotoğraflar */}
-                    {fotograflar.length > 1 && (
-                        <div className="flex gap-2 p-4 overflow-x-auto">
-                            {fotograflar.map((f: any, i: number) => (
-                                <img key={i} src={f.media_url} alt="" className="w-24 h-24 object-cover rounded-lg flex-shrink-0 cursor-pointer" />
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="p-6">
-
-                        {/* Başlık ve temel bilgiler */}
-                        <div className="flex justify-between items-start">
-                            <h1 className="text-3xl font-bold text-gray-900">{ilan.name}</h1>
-                            <span className="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full">Aktif</span>
-                        </div>
-
-                        <div className="flex flex-wrap gap-3 mt-3">
-                            <span className="bg-blue-50 text-blue-700 text-sm px-3 py-1 rounded-full">🐾 {ilan.pet_type}</span>
-                            <span className="bg-purple-50 text-purple-700 text-sm px-3 py-1 rounded-full">⚥ {ilan.gender}</span>
-                            <span className="bg-orange-50 text-orange-700 text-sm px-3 py-1 rounded-full">🗓 {ilan.age_months} aylık</span>
-                            {ilan.breed && <span className="bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full">🏷 {ilan.breed}</span>}
-                            <span className="bg-red-50 text-red-700 text-sm px-3 py-1 rounded-full">📍 {ilan.city}{ilan.district ? `, ${ilan.district}` : ''}</span>
-                        </div>
-
-                        {/* Açıklama */}
-                        <p className="text-gray-600 mt-6 leading-relaxed">{ilan.description}</p>
-
-                        {/* Sağlık durumu */}
-                        {ilan.health_status && Object.values(ilan.health_status).some(Boolean) && (
-                            <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-                                <h3 className="font-semibold text-gray-900 mb-3">Sağlık Durumu</h3>
-                                <div className="flex flex-wrap gap-2">
-                                    {ilan.health_status.vaccinated && <span className="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full">✅ Aşılı</span>}
-                                    {ilan.health_status.neutered && <span className="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full">✅ Kısırlaştırılmış</span>}
-                                    {ilan.health_status.dewormed && <span className="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full">✅ Parazit Tedavisi</span>}
-                                    {ilan.health_status.microchipped && <span className="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full">✅ Mikroçipli</span>}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Mesaj butonu */}
-                        <a
-                            href={`/mesajlar/${ilan.id}`}
-                            className="mt-6 w-full bg-blue-600 text-white py-4 rounded-xl font-medium hover:bg-blue-700 transition-colors text-center block no-underline text-lg"
-                        >
-                            💬 Mesaj Gönder
-                        </a>
-
+              {/* Info bar */}
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 py-6 border-y border-outline-variant/15">
+                {ilan.breed && (
+                  <>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] uppercase text-on-surface-variant font-bold tracking-wider">
+                        Cins
+                      </span>
+                      <span className="text-lg font-bold font-headline">{ilan.breed}</span>
                     </div>
+                    <div className="w-px h-8 bg-outline-variant/20 hidden sm:block" />
+                  </>
+                )}
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase text-on-surface-variant font-bold tracking-wider">
+                    Tür
+                  </span>
+                  <span className="text-lg font-bold font-headline">{formatPetType(ilan.pet_type)}</span>
                 </div>
+                <div className="w-px h-8 bg-outline-variant/20 hidden sm:block" />
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase text-on-surface-variant font-bold tracking-wider">
+                    Yaş
+                  </span>
+                  <span className="text-lg font-bold font-headline">{formatAge(ilan.age_months)}</span>
+                </div>
+                <div className="w-px h-8 bg-outline-variant/20 hidden sm:block" />
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase text-on-surface-variant font-bold tracking-wider">
+                    Konum
+                  </span>
+                  <span className="text-lg font-bold font-headline">
+                    {ilan.city}{ilan.district ? `, ${ilan.district}` : ''}
+                  </span>
+                </div>
+              </div>
             </div>
-        </main >
-    )
+
+            {/* Description */}
+            {ilan.description && (
+              <section className="space-y-4">
+                <h3 className="text-2xl font-bold font-headline">
+                  {ilan.name} Hakkında
+                </h3>
+                <div className="text-on-surface-variant leading-relaxed whitespace-pre-line">
+                  {ilan.description}
+                </div>
+              </section>
+            )}
+
+            {/* Health & Traits Bento Grid */}
+            {activeTraits.length > 0 && (
+              <section className="space-y-6">
+                <h3 className="text-2xl font-bold font-headline">Sağlık & Özellikler</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {activeTraits.map((trait) => (
+                    <div
+                      key={trait.label}
+                      className="bg-surface-container-low p-6 rounded-xl flex flex-col items-center text-center gap-3 transition-transform hover:-translate-y-1"
+                    >
+                      <span
+                        className="material-symbols-outlined text-primary-container scale-125 icon-fill"
+                      >
+                        {trait.icon}
+                      </span>
+                      <span className="font-bold text-sm">{trait.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Location Section */}
+            <section className="space-y-4">
+              <h3 className="text-2xl font-bold font-headline">
+                {ilan.name} ile Nerede Buluşabilirsin?
+              </h3>
+              <div className="h-48 md:h-64 rounded-xl bg-surface-container-high overflow-hidden relative">
+                <div className="w-full h-full bg-gradient-to-br from-surface-container-high to-surface-dim opacity-60" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="relative">
+                    <div className="w-12 h-12 bg-primary rounded-full animate-ping absolute inset-0 opacity-25" />
+                    <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white relative editorial-shadow">
+                      <span className="material-symbols-outlined icon-fill">location_on</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
+                  <span className="text-sm font-bold text-on-surface">
+                    📍 {ilan.city}{ilan.district ? `, ${ilan.district}` : ''}
+                  </span>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          {/* Sidebar / CTA Card */}
+          <aside className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
+
+            {/* Sticky Adoption Card */}
+            <div className="bg-surface-container-lowest rounded-xl p-6 lg:p-8 editorial-shadow space-y-6 border border-outline-variant/10">
+
+              {/* Poster Info */}
+              {ilanSahibi && (
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-full bg-gradient-to-tl from-orange-700 to-orange-400 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+                    {ilanSahibi.full_name?.[0]?.toUpperCase() || '?'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="font-bold font-headline truncate">
+                        {ilanSahibi.full_name || 'İlan Sahibi'}
+                      </h4>
+                      {(ilanSahibi.trust_score ?? 0) >= 80 && (
+                        <span className="material-symbols-outlined text-blue-500 text-sm icon-fill flex-shrink-0">
+                          verified
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-on-surface-variant font-medium">İlan Sahibi</p>
+                    {ilanSahibi.trust_score != null && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className="material-symbols-outlined text-yellow-500 text-xs icon-fill">
+                          star
+                        </span>
+                        <span className="text-xs font-bold">
+                          Güven Skoru: {ilanSahibi.trust_score}/100
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* CTA Buttons */}
+              <div className="space-y-3">
+                <Link
+                  href={`/mesajlar/${ilan.id}`}
+                  className="w-full btn-gradient py-4 rounded-full text-center block no-underline text-sm lg:text-base shadow-lg shadow-orange-500/20"
+                >
+                  Sahiplenme Başvurusu Yap
+                </Link>
+                <Link
+                  href={`/mesajlar/${ilan.id}`}
+                  className="w-full bg-surface-container-highest text-on-surface-variant font-bold py-4 rounded-full flex items-center justify-center gap-2 no-underline text-sm lg:text-base transition-transform active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-lg">mail</span>
+                  Mesaj Gönder
+                </Link>
+              </div>
+
+              <div className="pt-5 border-t border-outline-variant/10">
+                <p className="text-[10px] text-center text-on-surface-variant/60 font-bold uppercase tracking-widest">
+                  Ortalama yanıt süresi: 2 saat
+                </p>
+              </div>
+            </div>
+
+            {/* Safety Tip */}
+            <div className="bg-orange-50 p-5 lg:p-6 rounded-xl border border-orange-100/50">
+              <div className="flex gap-3">
+                <span className="material-symbols-outlined text-primary-container flex-shrink-0">
+                  info
+                </span>
+                <div>
+                  <h5 className="font-bold text-orange-900 text-sm">Güvenlik İpucu</h5>
+                  <p className="text-xs text-orange-800 leading-relaxed mt-1">
+                    Hayvanı görmeden asla ödeme yapmayın. Buluşmayı her zaman güvenli, herkese açık bir yerde veya doğrulanmış barınak konumunda yapın.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </main>
+
+      {/* Mobile Bottom Nav */}
+      <BottomNav />
+    </>
+  )
 }
