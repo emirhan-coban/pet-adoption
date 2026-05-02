@@ -70,7 +70,7 @@ export default async function Profil() {
 
     return (
         <div className="bg-surface text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed min-h-screen flex flex-col">
-            <Header user={user} />
+            <Header />
 
             <main className="pt-24 pb-32 md:pb-16 px-4 sm:px-6 lg:px-10 max-w-7xl mx-auto w-full flex-grow">
 

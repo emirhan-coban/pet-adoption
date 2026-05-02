@@ -110,7 +110,7 @@ export default function IlanOlustur() {
 
     return (
         <div className="bg-surface text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed min-h-screen flex flex-col">
-            <Header user={user} />
+            <Header />
 
             <main className="pt-24 pb-32 px-6 max-w-4xl mx-auto w-full flex-grow">
                 {/* Progress Indicator */}
@@ -303,7 +303,7 @@ export default function IlanOlustur() {
                                     <span className="material-symbols-outlined text-3xl text-outline group-hover:scale-110 transition-transform">upload_file</span>
                                     <span className="text-[10px] font-bold uppercase tracking-tighter text-outline">Görsel Seç</span>
                                 </label>
-                                
+
                                 {fotograflar.map((f, i) => (
                                     <div key={i} className="aspect-square rounded-xl overflow-hidden relative group bg-surface-container-high">
                                         <img src={URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />

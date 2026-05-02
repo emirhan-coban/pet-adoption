@@ -1,12 +1,29 @@
 'use client'
 
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase'
 
-interface HeaderProps {
-  user: { email?: string } | null
-}
+export default function Header() {
+  const [user, setUser] = useState<{ email?: string } | null>(null)
+  const [loading, setLoading] = useState(true)
 
-export default function Header({ user }: HeaderProps) {
+  useEffect(() => {
+    const supabase = createClient()
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
   return (
     <header className="fixed top-0 w-full z-50 glass-nav border-b border-outline-variant/20">
       <div className="flex items-center justify-between px-6 lg:px-10 py-4 w-full max-w-7xl mx-auto">
@@ -20,26 +37,19 @@ export default function Header({ user }: HeaderProps) {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
-          <Link
-            href="/"
-            className="text-primary-container font-bold font-headline transition-opacity hover:opacity-80 active:scale-95 duration-200 no-underline"
-          >
+          <Link href="/" className="text-primary-container font-bold font-headline transition-opacity hover:opacity-80 active:scale-95 duration-200 no-underline">
             Keşfet
           </Link>
-          <Link
-            href="/mesajlar"
-            className="text-on-surface-variant transition-opacity hover:opacity-80 active:scale-95 duration-200 no-underline"
-          >
+          <Link href="/mesajlar" className="text-on-surface-variant transition-opacity hover:opacity-80 active:scale-95 duration-200 no-underline">
             Mesajlar
           </Link>
-          <Link
-            href="/ilan-olustur"
-            className="text-on-surface-variant transition-opacity hover:opacity-80 active:scale-95 duration-200 no-underline"
-          >
+          <Link href="/ilan-olustur" className="text-on-surface-variant transition-opacity hover:opacity-80 active:scale-95 duration-200 no-underline">
             İlan Ver
           </Link>
 
-          {user ? (
+          {loading ? (
+            <div className="w-20 h-9 rounded-full bg-surface-container-high animate-pulse" />
+          ) : user ? (
             <div className="flex items-center gap-3">
               <Link
                 href="/profil"
@@ -58,10 +68,7 @@ export default function Header({ user }: HeaderProps) {
               </Link>
             </div>
           ) : (
-            <Link
-              href="/giris"
-              className="btn-gradient px-6 py-2.5 rounded-full text-sm no-underline"
-            >
+            <Link href="/giris" className="btn-gradient px-6 py-2.5 rounded-full text-sm no-underline">
               Giriş Yap
             </Link>
           )}
@@ -69,7 +76,9 @@ export default function Header({ user }: HeaderProps) {
 
         {/* Mobile: Auth button only, rest goes to bottom nav */}
         <div className="md:hidden flex items-center gap-3">
-          {user ? (
+          {loading ? (
+            <div className="w-9 h-9 rounded-full bg-surface-container-high animate-pulse" />
+          ) : user ? (
             <Link
               href="/profil"
               className="w-9 h-9 rounded-full bg-gradient-to-tl from-orange-700 to-orange-400 flex items-center justify-center text-white text-sm font-bold no-underline"
@@ -77,10 +86,7 @@ export default function Header({ user }: HeaderProps) {
               {user.email?.[0]?.toUpperCase() || 'U'}
             </Link>
           ) : (
-            <Link
-              href="/giris"
-              className="btn-gradient px-5 py-2 rounded-full text-sm no-underline"
-            >
+            <Link href="/giris" className="btn-gradient px-5 py-2 rounded-full text-sm no-underline">
               Giriş
             </Link>
           )}

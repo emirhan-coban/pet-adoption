@@ -12,7 +12,6 @@ export default async function Home({
   searchParams: Promise<{ pet_type?: string; gender?: string; city?: string }>
 }) {
   const supabase = await createServerSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
   const filters = await searchParams
 
   let query = supabase
@@ -34,7 +33,7 @@ export default async function Home({
   return (
     <>
       {/* Header */}
-      <Header user={user} />
+      <Header />
 
       <main className="pt-24 pb-32 md:pb-16 px-4 sm:px-6 lg:px-10 max-w-7xl mx-auto w-full">
         {/* Hero Section */}

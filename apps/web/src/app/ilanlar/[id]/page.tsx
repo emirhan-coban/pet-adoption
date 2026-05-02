@@ -83,8 +83,6 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
   const { id } = await params
   const supabase = await createServerSupabase()
 
-  const { data: { user } } = await supabase.auth.getUser()
-
   const { data: ilan, error } = await supabase
     .from('listings')
     .select('*, listing_media(media_url, is_primary)')
@@ -121,7 +119,7 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
 
   return (
     <>
-      <Header user={user} />
+      <Header />
 
       <main className="pt-20 pb-32 md:pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
         {/* Back link */}
