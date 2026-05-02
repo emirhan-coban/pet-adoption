@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   description:
     "Türkiye'nin hayvan sahiplendirme platformu. Sahiplendir üzerinden ilan aç, başvur, can dostunu bul.",
   metadataBase: new URL('https://sahiplendir.tr'),
+  icons: {
+    icon: '/logo.svg',
+    shortcut: '/logo.svg',
+    apple: '/logo.svg',
+  },
   openGraph: {
     title: 'Sahiplendir — Yeni Can Dostunu Bul',
     description: 'Türkiye\'nin hayvan sahiplendirme platformu.',
