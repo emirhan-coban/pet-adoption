@@ -35,13 +35,11 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                 .single()
             setIlan(ilan)
 
-            // Get listing photo
             if (ilan?.listing_media) {
                 const primary = ilan.listing_media.find((m: any) => m.is_primary)
                 setIlanFoto(primary?.media_url || ilan.listing_media[0]?.media_url || null)
             }
 
-            // Get listing owner info
             if (ilan?.user_id) {
                 const { data: owner } = await supabase
                     .from('users')
@@ -58,26 +56,28 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                 .order('created_at', { ascending: true })
             setMesajlar(mevcutMesajlar ?? [])
             setYukleniyor(false)
-
-            const kanal = supabase
-                .channel(`messages-${listing_id}`)
-                .on('postgres_changes', {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'messages',
-                    filter: `listing_id=eq.${listing_id}`,
-                }, (payload) => {
-                    setMesajlar((prev) => {
-                        if (prev.find((m) => m.id === payload.new.id)) return prev
-                        return [...prev, payload.new]
-                    })
-                })
-                .subscribe()
-
-            return () => { supabase.removeChannel(kanal) }
         }
         yukle()
     }, [])
+
+    useEffect(() => {
+        if (!listingId) return
+        const kanal = supabase
+            .channel(`messages-${listingId}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages',
+                filter: `listing_id=eq.${listingId}`,
+            }, (payload) => {
+                setMesajlar((prev) => {
+                    if (prev.find((m) => m.id === payload.new.id)) return prev
+                    return [...prev, payload.new]
+                })
+            })
+            .subscribe()
+        return () => { supabase.removeChannel(kanal) }
+    }, [listingId])
 
     useEffect(() => {
         altRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -196,7 +196,7 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
 
                             <div className="flex flex-col min-w-0">
                                 <span className="font-headline font-bold text-base md:text-lg text-on-surface leading-tight truncate">
-                                    {ilanSahibi?.full_name || 'PawBuddy'}
+                                    {ilanSahibi?.full_name || 'Sahiplendir'}
                                 </span>
                                 <span className="text-[11px] font-semibold text-primary uppercase tracking-wider truncate">
                                     {ilan?.name ? `${ilan.name} hakkında sohbet` : 'Yükleniyor...'}
@@ -352,11 +352,8 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                                                                     Yapay Zekâ Uyarısı: Olası Dolandırıcılık
                                                                 </span>
                                                                 <p className="text-xs text-on-error-container leading-relaxed">
-                                                                    Para konusu geçti. PawBuddy, hayvanı görmeden kapora veya ücret ödenmemesini şiddetle tavsiye eder. Kendinizi güvende hissetmiyorsanız &quot;Şikayet Et&quot; butonunu kullanın.
+                                                                    Para konusu geçti. Sahiplendir, hayvanı görmeden kapora veya ücret ödenmemesini şiddetle tavsiye eder.
                                                                 </p>
-                                                                <button className="mt-2 text-xs font-bold text-error underline decoration-error/30 hover:decoration-error transition-all self-start">
-                                                                    İlanı Şikayet Et
-                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>

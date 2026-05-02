@@ -24,76 +24,89 @@ export default function MesajlarListesi() {
     const [konusmalar, setKonusmalar] = useState<Conversation[]>([])
     const [yukleniyor, setYukleniyor] = useState(true)
 
+    async function yukleKonusmalar(currentUser: any) {
+        const { data: mesajlar } = await supabase
+            .from('messages')
+            .select('*')
+            .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
+            .order('created_at', { ascending: false })
+
+        if (!mesajlar || mesajlar.length === 0) {
+            setKonusmalar([])
+            setYukleniyor(false)
+            return
+        }
+
+        const listingMap = new Map<string, any>()
+        for (const m of mesajlar) {
+            if (!listingMap.has(m.listing_id)) {
+                listingMap.set(m.listing_id, m)
+            }
+        }
+
+        const conversations: Conversation[] = []
+        for (const [listingId, lastMsg] of listingMap) {
+            const { data: ilan } = await supabase
+                .from('listings')
+                .select('*, listing_media(media_url, is_primary)')
+                .eq('id', listingId)
+                .single()
+
+            if (!ilan) continue
+
+            const otherUserId = lastMsg.sender_id === currentUser.id
+                ? lastMsg.receiver_id
+                : lastMsg.sender_id
+
+            const { data: otherUser } = await supabase
+                .from('users')
+                .select('full_name')
+                .eq('id', otherUserId)
+                .single()
+
+            const primaryPhoto = ilan.listing_media?.find((m: any) => m.is_primary)?.media_url
+                || ilan.listing_media?.[0]?.media_url
+                || null
+
+            conversations.push({
+                listing_id: listingId,
+                listing_name: ilan.name || 'İsimsiz',
+                listing_photo: primaryPhoto,
+                other_user_name: otherUser?.full_name || 'Kullanıcı',
+                last_message: lastMsg.content,
+                last_message_time: lastMsg.created_at,
+                unread: !lastMsg.is_read && lastMsg.sender_id !== currentUser.id,
+                pet_type: ilan.pet_type,
+                city: ilan.city,
+            })
+        }
+
+        setKonusmalar(conversations)
+        setYukleniyor(false)
+    }
+
     useEffect(() => {
-        async function yukle() {
+        async function init() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) { window.location.href = '/giris'; return }
             setUser(user)
+            await yukleKonusmalar(user)
 
-            // Get all messages where the user is sender or receiver
-            const { data: mesajlar } = await supabase
-                .from('messages')
-                .select('*')
-                .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-                .order('created_at', { ascending: false })
-
-            if (!mesajlar || mesajlar.length === 0) {
-                setYukleniyor(false)
-                return
-            }
-
-            // Group by listing_id and get last message
-            const listingMap = new Map<string, any>()
-            for (const m of mesajlar) {
-                if (!listingMap.has(m.listing_id)) {
-                    listingMap.set(m.listing_id, m)
-                }
-            }
-
-            // Fetch listing details for each conversation
-            const conversations: Conversation[] = []
-
-            for (const [listingId, lastMsg] of listingMap) {
-                const { data: ilan } = await supabase
-                    .from('listings')
-                    .select('*, listing_media(media_url, is_primary)')
-                    .eq('id', listingId)
-                    .single()
-
-                if (!ilan) continue
-
-                // Get other user's info
-                const otherUserId = lastMsg.sender_id === user.id
-                    ? lastMsg.receiver_id
-                    : lastMsg.sender_id
-
-                const { data: otherUser } = await supabase
-                    .from('users')
-                    .select('full_name')
-                    .eq('id', otherUserId)
-                    .single()
-
-                const primaryPhoto = ilan.listing_media?.find((m: any) => m.is_primary)?.media_url
-                    || ilan.listing_media?.[0]?.media_url
-                    || null
-
-                conversations.push({
-                    listing_id: listingId,
-                    listing_name: ilan.name || 'İsimsiz',
-                    listing_photo: primaryPhoto,
-                    other_user_name: otherUser?.full_name || 'Kullanıcı',
-                    last_message: lastMsg.content,
-                    last_message_time: lastMsg.created_at,
-                    unread: lastMsg.sender_id !== user.id,
-                    pet_type: ilan.pet_type,
-                    city: ilan.city,
+            const kanal = supabase
+                .channel('mesajlar-liste')
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                }, () => {
+                    supabase.auth.getUser().then(({ data: { user } }) => {
+                        if (user) yukleKonusmalar(user)
+                    })
                 })
-            }
-
-            setKonusmalar(conversations)
-            setYukleniyor(false)
+                .subscribe()
+            return () => { supabase.removeChannel(kanal) }
         }
-        yukle()
+        init()
     }, [])
 
     function formatZaman(dateStr: string) {
