@@ -11,12 +11,10 @@ export default function Header({ user }: HeaderProps) {
     <header className="fixed top-0 w-full z-50 glass-nav border-b border-outline-variant/20">
       <div className="flex items-center justify-between px-6 lg:px-10 py-4 w-full max-w-7xl mx-auto">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 no-underline group">
-          <span className="material-symbols-outlined text-primary-container text-[28px] group-hover:scale-110 transition-transform">
-            pets
-          </span>
+        <Link href="/" className="flex items-center gap-2 no-underline group">
+          <img src="/logo.svg" alt="Sahiplendir" className="h-8 w-auto group-hover:scale-105 transition-transform" />
           <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-tl from-orange-700 to-orange-400 bg-clip-text text-transparent font-headline">
-            PawBuddy
+            Sahiplendir
           </h1>
         </Link>
 

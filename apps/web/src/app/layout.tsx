@@ -2,9 +2,18 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PawBuddy — Yeni Can Dostunu Bul",
+  title: "Sahiplendir — Yeni Can Dostunu Bul",
   description:
-    "Türkiye'nin en güvenilir hayvan sahiplendirme platformu. Kediler, köpekler ve daha fazlası seni bekliyor.",
+    "Türkiye'nin hayvan sahiplendirme platformu. Sahiplendir üzerinden ilan aç, başvur, can dostunu bul.",
+  metadataBase: new URL('https://sahiplendir.tr'),
+  openGraph: {
+    title: 'Sahiplendir — Yeni Can Dostunu Bul',
+    description: 'Türkiye\'nin hayvan sahiplendirme platformu.',
+    url: 'https://sahiplendir.tr',
+    siteName: 'Sahiplendir',
+    locale: 'tr_TR',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({

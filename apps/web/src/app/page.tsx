@@ -43,10 +43,10 @@ export default async function Home({
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-on-surface mb-4 leading-tight font-headline">
               Yeni{' '}
               <span className="text-primary-container">can dostunu</span>{' '}
-              bul
+              sahiplen
             </h2>
             <p className="text-on-surface-variant text-base md:text-lg">
-              Seni bekleyen şefkatli sahiplendirme hikâyeleri.
+              Türkiye genelinde binlerce hayvan seni bekliyor. Ücretsiz ilan aç, başvur, sahiplen.
             </p>
           </div>
 
