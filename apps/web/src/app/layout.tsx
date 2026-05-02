@@ -2,23 +2,52 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Sahiplendir — Yeni Can Dostunu Bul",
+  title: {
+    default: 'Sahiplendir - Yeni Can Dostunu Bul',
+    template: '%s | Sahiplendir',
+  },
   description:
-    "Türkiye'nin hayvan sahiplendirme platformu. Sahiplendir üzerinden ilan aç, başvur, can dostunu bul.",
+    'Türkiye\'nin hayvan sahiplendirme platformu. Sahiplendir üzerinden ilan aç, başvur, can dostunu bul.',
   metadataBase: new URL('https://sahiplendir.tr'),
+  alternates: {
+    canonical: 'https://sahiplendir.tr',
+  },
   icons: {
     icon: '/logo.svg',
     shortcut: '/logo.svg',
     apple: '/logo.svg',
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   openGraph: {
-    title: 'Sahiplendir — Yeni Can Dostunu Bul',
+    title: 'Sahiplendir - Yeni Can Dostunu Bul',
     description: 'Türkiye\'nin hayvan sahiplendirme platformu.',
     url: 'https://sahiplendir.tr',
     siteName: 'Sahiplendir',
     locale: 'tr_TR',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Sahiplendir - Yeni Can Dostunu Bul',
+    description: 'Türkiye\'nin hayvan sahiplendirme platformu.',
+  },
+  keywords: [
+    'hayvan sahiplendirme',
+    'kedi sahiplendirme',
+    'köpek sahiplendirme',
+    'sahiplendir',
+    'hayvan ilan',
+    'pet adoption türkiye',
+  ],
 };
 
 export default function RootLayout({

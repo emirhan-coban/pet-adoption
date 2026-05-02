@@ -1,9 +1,54 @@
 import { createServerSupabase } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
+import { type Metadata } from 'next'
 import Header from '../../components/Header'
 import BottomNav from '../../components/BottomNav'
 import ImageCarousel from '../../components/ImageCarousel'
 import Link from 'next/link'
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> }
+): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await createServerSupabase()
+  const { data: ilan } = await supabase
+    .from('listings')
+    .select('name, pet_type, city, description, listing_media(media_url, is_primary)')
+    .eq('id', id)
+    .eq('status', 'active')
+    .single()
+
+  if (!ilan) return {}
+
+  const petTypeMap: Record<string, string> = {
+    cat: 'Kedi', dog: 'Köpek', bird: 'Kuş', rabbit: 'Tavşan', other: 'Hayvan'
+  }
+  const petType = petTypeMap[ilan.pet_type] ?? 'Hayvan'
+  const title = `${ilan.name} - ${petType} Sahiplendirme - ${ilan.city}`
+  const description = ilan.description
+    ? ilan.description.slice(0, 155)
+    : `${ilan.city}'de sahiplendirilmek bekleyen ${petType.toLowerCase()} ${ilan.name}. Sahiplendir'de ücretsiz ilan.`
+  const foto = (ilan.listing_media as any[])?.find((m) => m.is_primary)?.media_url
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `https://sahiplendir.tr/ilanlar/${id}` },
+    openGraph: {
+      title,
+      description,
+      url: `https://sahiplendir.tr/ilanlar/${id}`,
+      type: 'article',
+      ...(foto && { images: [{ url: foto, width: 1200, height: 630, alt: ilan.name }] }),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      ...(foto && { images: [foto] }),
+    },
+  }
+}
 
 function formatAge(months: number): string {
   if (months < 1) return 'Yavru'
