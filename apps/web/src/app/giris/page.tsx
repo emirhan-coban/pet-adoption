@@ -13,6 +13,7 @@ export default function Giris() {
     const [yukleniyor, setYukleniyor] = useState(false)
     const [mesaj, setMesaj] = useState('')
     const [mesajTuru, setMesajTuru] = useState<'hata' | 'basari'>('hata')
+    const [dogrulamaBekleniyor, setDogrulamaBekleniyor] = useState(false)
 
     const supabase = createClient()
 
@@ -26,9 +27,13 @@ export default function Giris() {
         setMesaj('')
         const { error } = await supabase.auth.signInWithPassword({ email, password: sifre })
         if (error) {
-            setMesaj(error.message === 'Invalid login credentials'
-                ? 'E-posta veya şifre hatalı. Lütfen tekrar deneyin.'
-                : 'Hata: ' + error.message)
+            if (error.message === 'Invalid login credentials') {
+                setMesaj('E-posta veya şifre hatalı. Lütfen tekrar deneyin.')
+            } else if (error.message === 'Email not confirmed') {
+                setMesaj('E-posta adresiniz henüz doğrulanmamış. Lütfen gelen kutunuzu kontrol edin.')
+            } else {
+                setMesaj('Hata: ' + error.message)
+            }
             setMesajTuru('hata')
         } else {
             window.location.href = '/'
@@ -50,20 +55,23 @@ export default function Giris() {
         setYukleniyor(true)
         setMesaj('')
 
-        const { data, error } = await supabase.auth.signUp({ email, password: sifre })
+        const { error } = await supabase.auth.signUp({
+            email,
+            password: sifre,
+            options: {
+                emailRedirectTo: `${window.location.origin}/`,
+                data: { full_name: isim },
+            },
+        })
         if (error) {
-            setMesaj('Hata: ' + error.message)
+            if (error.message.includes('already registered')) {
+                setMesaj('Bu e-posta adresi zaten kayıtlı. Giriş yapmayı deneyin.')
+            } else {
+                setMesaj('Hata: ' + error.message)
+            }
             setMesajTuru('hata')
         } else {
-            // Users tablosuna isim ekle
-            if (data.user && isim) {
-                await supabase.from('users').upsert({
-                    id: data.user.id,
-                    full_name: isim,
-                    trust_score: 100,
-                })
-            }
-            window.location.href = '/'
+            setDogrulamaBekleniyor(true)
         }
         setYukleniyor(false)
     }
@@ -201,6 +209,36 @@ export default function Giris() {
                             </button>
                         </div>
 
+                        {/* Email Doğrulama Bekleniyor Ekranı */}
+                        {dogrulamaBekleniyor ? (
+                            <div className="text-center py-8 space-y-6">
+                                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                                    <span className="material-symbols-outlined text-green-600 text-4xl">mark_email_unread</span>
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-extrabold text-on-surface font-headline mb-2">E-postanı Kontrol Et!</h2>
+                                    <p className="text-on-surface-variant text-sm leading-relaxed">
+                                        <span className="font-bold text-on-surface">{email}</span> adresine bir doğrulama bağlantısı gönderdik.
+                                        Lütfen e-postanı kontrol et ve bağlantıya tıkla.
+                                    </p>
+                                </div>
+                                <div className="bg-surface-container-high rounded-2xl p-4 text-left space-y-2">
+                                    <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">E-posta gelmediyse:</p>
+                                    <ul className="text-sm text-on-surface-variant space-y-1">
+                                        <li>• Spam / Gereksiz klasörünü kontrol et</li>
+                                        <li>• Birkaç dakika bekle</li>
+                                        <li>• E-posta adresinin doğru olduğundan emin ol</li>
+                                    </ul>
+                                </div>
+                                <button
+                                    onClick={() => { setDogrulamaBekleniyor(false); setSekme('giris'); setMesaj(''); }}
+                                    className="text-sm font-semibold text-primary hover:text-primary-container transition-colors"
+                                >
+                                    Giriş sayfasına dön
+                                </button>
+                            </div>
+                        ) : (
+                        <>
                         {/* Form */}
                         <div className="space-y-4">
 
@@ -368,6 +406,8 @@ export default function Giris() {
                                 Ana Sayfaya Dön
                             </Link>
                         </div>
+                        </>
+                        )}
                     </div>
                 </div>
             </div>
