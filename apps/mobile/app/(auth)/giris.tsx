@@ -93,7 +93,7 @@ export default function Giris() {
             >
               <Text style={styles.logoEmoji}>🐾</Text>
             </LinearGradient>
-            <Text style={styles.logoText}>PawBuddy</Text>
+            <Text style={styles.logoText}>Sahiplendir</Text>
           </View>
 
           {/* Heading */}

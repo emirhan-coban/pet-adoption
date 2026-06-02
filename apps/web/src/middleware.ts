@@ -29,8 +29,21 @@ export async function middleware(request: NextRequest) {
 
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Giriş gerektiren sayfalar için koruma
-    if (!user && request.nextUrl.pathname.startsWith('/profil')) {
+    // Giriş gerektiren sayfalar
+    const protectedRoutes = [
+        '/profil',
+        '/mesajlar',
+        '/ilan-olustur',
+        '/hesap-sil',
+        '/cikis'
+    ]
+
+    const isProtectedRoute = protectedRoutes.some(route => 
+        request.nextUrl.pathname === route || 
+        request.nextUrl.pathname.startsWith(route + '/')
+    )
+
+    if (!user && isProtectedRoute) {
         return NextResponse.redirect(new URL('/giris', request.url))
     }
 
@@ -38,5 +51,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+    matcher: [
+        '/profil/:path*',
+        '/mesajlar/:path*',
+        '/ilan-olustur',
+        '/hesap-sil',
+        '/cikis'
+    ],
 }

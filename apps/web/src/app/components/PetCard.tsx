@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import FavoriButon from './FavoriButon'
 
 interface PetCardProps {
   id: string
@@ -9,13 +10,14 @@ interface PetCardProps {
   gender: string
   city: string
   district?: string
-  ageMonths: number
+  ageMonths: number | null | undefined
   description?: string
   photoUrl?: string
   index?: number
 }
 
-function formatAge(months: number): string {
+function formatAge(months: number | null | undefined): string {
+  if (months == null) return 'Belirtilmemiş'
   if (months < 1) return 'Yavru'
   if (months < 12) return `${months} Aylık`
   const years = Math.floor(months / 12)
@@ -120,15 +122,18 @@ export default function PetCard({
             </p>
           )}
 
-          <button
-            className="w-full py-3 rounded-full btn-gradient text-sm tracking-tight cursor-pointer"
-            onClick={(e) => {
-              e.preventDefault()
-              window.location.href = `/ilanlar/${id}`
-            }}
-          >
-            {name} ile Tanış
-          </button>
+          <div className="flex gap-2">
+            <button
+              className="flex-1 py-3 rounded-full btn-gradient text-sm tracking-tight cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault()
+                window.location.href = `/ilanlar/${id}`
+              }}
+            >
+              {name} ile Tanış
+            </button>
+            <FavoriButon listingId={id} />
+          </div>
         </div>
       </Link>
     </div>

@@ -135,7 +135,6 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
         return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
     }
 
-    // Group messages by date
     function grupla(mesajlar: any[]) {
         const groups: { tarih: string; mesajlar: any[] }[] = []
         let currentDate = ''
@@ -152,7 +151,6 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
         return groups
     }
 
-    // Check if a message mentions money/payment keywords (for AI warning simulation)
     function paraDenKontrol(content: string) {
         const keywords = ['ödeme', 'para', 'deposit', 'kapora', 'havale', 'eft', 'iban', 'tl', '₺', 'ücret', 'fiyat', 'bedel']
         return keywords.some(k => content.toLowerCase().includes(k))
@@ -163,13 +161,9 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
     return (
         <div className="bg-surface text-on-surface font-body min-h-screen flex flex-col selection:bg-primary-fixed selection:text-on-primary-fixed">
 
-            {/* ═══════════════════════════════════════════ */}
-            {/* HEADER — Chat-specific top bar              */}
-            {/* ═══════════════════════════════════════════ */}
             <header className="fixed top-0 w-full z-50 glass-nav border-b border-outline-variant/15">
                 <div className="flex items-center justify-between px-4 md:px-6 lg:px-10 py-3 md:py-4 w-full max-w-7xl mx-auto">
 
-                    {/* Left: Back + Pet Info */}
                     <div className="flex items-center gap-3 md:gap-4 min-w-0">
                         <Link
                             href="/"
@@ -179,7 +173,6 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                         </Link>
 
                         <div className="flex items-center gap-3 min-w-0">
-                            {/* Pet Avatar */}
                             <div className="w-10 h-10 md:w-11 md:h-11 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-primary-container/30">
                                 {ilanFoto ? (
                                     <img
@@ -205,7 +198,6 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                         </div>
                     </div>
 
-                    {/* Center: Desktop Navigation */}
                     <nav className="hidden md:flex items-center gap-8">
                         <Link href="/" className="text-on-surface-variant font-bold font-headline text-base hover:opacity-80 transition-opacity no-underline">
                             Keşfet
@@ -218,7 +210,6 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                         </Link>
                     </nav>
 
-                    {/* Right: Actions */}
                     <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
                         {ilan && (
                             <Link
@@ -236,13 +227,9 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                 </div>
             </header>
 
-            {/* ═══════════════════════════════════════════ */}
-            {/* MAIN CHAT CANVAS                            */}
-            {/* ═══════════════════════════════════════════ */}
             <main className="flex-grow pt-[72px] md:pt-[80px] pb-28 md:pb-24">
                 <div className="max-w-3xl mx-auto w-full px-4 md:px-6">
 
-                    {/* Loading State */}
                     {yukleniyor && (
                         <div className="flex flex-col items-center justify-center py-32 gap-4">
                             <div className="w-12 h-12 rounded-full border-4 border-primary-container/30 border-t-primary-container animate-spin" />
@@ -250,7 +237,6 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                         </div>
                     )}
 
-                    {/* Empty State */}
                     {!yukleniyor && mesajlar.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-24 md:py-32 gap-6 text-center">
                             <div className="w-20 h-20 rounded-full bg-primary-fixed/40 flex items-center justify-center">
@@ -269,10 +255,8 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                         </div>
                     )}
 
-                    {/* Chat Messages */}
                     {!yukleniyor && mesajlar.length > 0 && (
                         <div className="flex flex-col gap-5 py-6">
-                            {/* AI Security Info — always shown at top */}
                             <div className="mx-auto w-full max-w-lg animate-fade-in-up">
                                 <div className="bg-orange-50 border-l-4 border-primary-container p-4 rounded-xl flex gap-3 items-start editorial-shadow">
                                     <span className="material-symbols-outlined text-primary-container icon-fill flex-shrink-0">security</span>
@@ -289,7 +273,6 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
 
                             {gruplar.map((grup, gi) => (
                                 <div key={gi} className="flex flex-col gap-4">
-                                    {/* Date Marker */}
                                     <div className="flex justify-center my-2">
                                         <span className="bg-surface-container text-on-surface-variant px-4 py-1 rounded-full text-[11px] font-semibold uppercase tracking-widest">
                                             {grup.tarih}
@@ -302,9 +285,7 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
 
                                         return (
                                             <div key={m.id}>
-                                                {/* Message Bubble */}
                                                 {benimMi ? (
-                                                    /* ─── Sent Message ─── */
                                                     <div className="flex flex-col items-end gap-1 self-end ml-auto max-w-[85%] md:max-w-[70%] animate-fade-in-up" style={{ animationDelay: `${mi * 40}ms` }}>
                                                         <div className="bg-primary text-on-primary px-5 py-3 rounded-t-2xl rounded-bl-2xl shadow-md hover:shadow-lg transition-shadow">
                                                             <p className="text-sm leading-relaxed">{m.content}</p>
@@ -319,9 +300,7 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    /* ─── Received Message ─── */
                                                     <div className="flex items-end gap-3 max-w-[85%] md:max-w-[70%] animate-fade-in-up" style={{ animationDelay: `${mi * 40}ms` }}>
-                                                        {/* Sender Avatar */}
                                                         <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
                                                             {ilanFoto ? (
                                                                 <img src={ilanFoto} alt="" className="w-full h-full object-cover" />
@@ -342,7 +321,6 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                                                     </div>
                                                 )}
 
-                                                {/* AI Warning — if money mentioned */}
                                                 {paraUyarisi && (
                                                     <div className="mx-auto w-full max-w-lg mt-3 animate-fade-in-up">
                                                         <div className="bg-error-container p-4 rounded-xl flex gap-3 items-start border border-error/20">
@@ -369,12 +347,8 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                 </div>
             </main>
 
-            {/* ═══════════════════════════════════════════ */}
-            {/* BOTTOM INPUT BAR                            */}
-            {/* ═══════════════════════════════════════════ */}
             <div className="fixed bottom-16 md:bottom-0 left-0 w-full px-4 md:px-6 pb-3 md:pb-5 pt-2 z-40">
                 <div className="max-w-3xl mx-auto bg-white/90 backdrop-blur-xl p-2 md:p-3 rounded-full shadow-lg flex items-center gap-1.5 md:gap-2 border border-outline-variant/10 editorial-shadow">
-                    {/* Attachment button */}
                     <button
                         className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low transition-colors flex-shrink-0"
                         title="Dosya ekle"
@@ -382,17 +356,17 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                         <span className="material-symbols-outlined text-[20px] md:text-[22px]">add_circle</span>
                     </button>
 
-                    {/* Text Input */}
                     <input
                         ref={inputRef}
                         value={yeniMesaj}
-                        onChange={(e) => setYeniMesaj(e.target.value)}
+                        onChange={(e) => setYeniMesaj(e.target.value.slice(0, 500))}
                         onKeyDown={(e) => e.key === 'Enter' && mesajGonder()}
                         placeholder="Mesajınızı yazın..."
+                        maxLength={500}
                         className="flex-grow bg-transparent border-none focus:ring-0 focus:outline-none text-sm font-medium placeholder:text-stone-400 text-on-surface py-2 px-1"
                     />
+                    <span className="text-[10px] text-on-surface-variant/50 flex-shrink-0 w-10 text-right">{yeniMesaj.length}/500</span>
 
-                    {/* Image button */}
                     <button
                         className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low transition-colors flex-shrink-0"
                         title="Fotoğraf gönder"
@@ -400,7 +374,6 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                         <span className="material-symbols-outlined text-[20px] md:text-[22px]">image</span>
                     </button>
 
-                    {/* Send button */}
                     <button
                         onClick={mesajGonder}
                         disabled={!yeniMesaj.trim() || gonderiyor}
@@ -412,9 +385,6 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                 </div>
             </div>
 
-            {/* ═══════════════════════════════════════════ */}
-            {/* BOTTOM NAV (mobile only)                    */}
-            {/* ═══════════════════════════════════════════ */}
             <BottomNav />
         </div>
     )

@@ -67,7 +67,7 @@ export default function Kesfet() {
           <View style={styles.headerIcon}>
             <Text style={styles.headerIconEmoji}>🐾</Text>
           </View>
-          <Text style={styles.headerTitle}>PawBuddy</Text>
+          <Text style={styles.headerTitle}>Sahiplendir</Text>
         </View>
       </View>
 

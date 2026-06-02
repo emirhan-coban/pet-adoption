@@ -4,7 +4,8 @@ import Header from '../components/Header'
 import BottomNav from '../components/BottomNav'
 import Link from 'next/link'
 
-function formatAge(months: number): string {
+function formatAge(months: number | null | undefined): string {
+    if (months == null) return 'Belirtilmemiş'
     if (months < 1) return 'Yavru'
     if (months < 12) return `${months} Aylık`
     const years = Math.floor(months / 12)
@@ -23,7 +24,8 @@ function formatPetType(type: string): string {
     }
 }
 
-function getAgeLabel(months: number): string {
+function getAgeLabel(months: number | null | undefined): string {
+    if (months == null) return 'Belirtilmemiş'
     if (months < 6) return 'Yavru'
     if (months < 24) return 'Genç'
     return 'Yetişkin'
@@ -55,7 +57,6 @@ export default async function Profil() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
-    // Count adopted pets
     const { count: sahiplendirilenSayisi } = await supabase
         .from('listings')
         .select('*', { count: 'exact', head: true })
@@ -73,14 +74,8 @@ export default async function Profil() {
             <Header />
 
             <main className="pt-24 pb-32 md:pb-16 px-4 sm:px-6 lg:px-10 max-w-7xl mx-auto w-full flex-grow">
-
-                {/* ═══════════════════════════════════════════ */}
-                {/* PROFILE HEADER SECTION                      */}
-                {/* ═══════════════════════════════════════════ */}
                 <section className="relative mb-12 md:mb-16 pt-2 md:pt-6">
                     <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
-
-                        {/* Profile Image with Verified Badge */}
                         <div className="relative flex-shrink-0">
                             <div className="w-32 h-32 md:w-44 md:h-44 lg:w-48 lg:h-48 rounded-xl overflow-hidden editorial-shadow bg-surface-container-low p-1">
                                 {profil?.avatar_url ? (
@@ -95,7 +90,6 @@ export default async function Profil() {
                                     </div>
                                 )}
                             </div>
-                            {/* Verified Badge */}
                             {trustScore >= 80 && (
                                 <div className="absolute -bottom-2 -right-2 bg-primary-container text-white p-2 rounded-full shadow-lg border-4 border-surface">
                                     <span className="material-symbols-outlined text-sm icon-fill">verified</span>
@@ -103,7 +97,6 @@ export default async function Profil() {
                             )}
                         </div>
 
-                        {/* Profile Info */}
                         <div className="text-center md:text-left flex-1 min-w-0">
                             <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-3">
                                 <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-on-surface font-headline">
@@ -126,14 +119,16 @@ export default async function Profil() {
                                 </p>
                             )}
 
-                            {/* Action Buttons */}
                             <div className="mt-6 flex flex-wrap justify-center md:justify-start gap-3">
-                                <button className="bg-gradient-to-br from-primary-container to-primary text-white px-8 py-3 rounded-full font-bold editorial-shadow hover:opacity-90 transition-all active:scale-95 duration-200 font-headline text-sm">
+                                <Link
+                                    href="/hesap-ayarari"
+                                    className="bg-gradient-to-br from-primary-container to-primary text-white px-8 py-3 rounded-full font-bold editorial-shadow hover:opacity-90 transition-all active:scale-95 duration-200 font-headline text-sm no-underline"
+                                >
                                     <span className="flex items-center gap-2">
                                         <span className="material-symbols-outlined text-lg">edit</span>
                                         Profili Düzenle
                                     </span>
-                                </button>
+                                </Link>
                                 <button className="bg-surface-container-highest text-on-surface-variant px-8 py-3 rounded-full font-bold hover:bg-surface-variant transition-all active:scale-95 duration-200 font-headline text-sm">
                                     <span className="flex items-center gap-2">
                                         <span className="material-symbols-outlined text-lg">share</span>
@@ -145,11 +140,7 @@ export default async function Profil() {
                     </div>
                 </section>
 
-                {/* ═══════════════════════════════════════════ */}
-                {/* STATS BENTO GRID                            */}
-                {/* ═══════════════════════════════════════════ */}
                 <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-14 md:mb-16">
-                    {/* Active Listings */}
                     <div className="bg-surface-container-lowest p-6 md:p-8 rounded-xl editorial-shadow border-b-4 border-primary-container/20 hover:-translate-y-1 transition-transform duration-300">
                         <span className="material-symbols-outlined text-primary mb-3 md:mb-4 block text-[28px]">pets</span>
                         <div className="text-3xl md:text-4xl font-extrabold text-on-surface mb-1 font-headline">
@@ -160,7 +151,6 @@ export default async function Profil() {
                         </div>
                     </div>
 
-                    {/* Pets Adopted */}
                     <div className="bg-surface-container-lowest p-6 md:p-8 rounded-xl editorial-shadow border-b-4 border-tertiary/20 hover:-translate-y-1 transition-transform duration-300">
                         <span className="material-symbols-outlined text-tertiary mb-3 md:mb-4 block text-[28px]">volunteer_activism</span>
                         <div className="text-3xl md:text-4xl font-extrabold text-on-surface mb-1 font-headline">
@@ -171,7 +161,6 @@ export default async function Profil() {
                         </div>
                     </div>
 
-                    {/* Trust Score */}
                     <div className="bg-surface-container-lowest p-6 md:p-8 rounded-xl editorial-shadow border-b-4 border-orange-200 hover:-translate-y-1 transition-transform duration-300">
                         <span className="material-symbols-outlined text-primary-container mb-3 md:mb-4 block text-[28px] icon-fill">shield_with_heart</span>
                         <div className="text-3xl md:text-4xl font-extrabold text-on-surface mb-1 font-headline">
@@ -183,9 +172,6 @@ export default async function Profil() {
                     </div>
                 </section>
 
-                {/* ═══════════════════════════════════════════ */}
-                {/* MY LISTINGS SECTION                         */}
-                {/* ═══════════════════════════════════════════ */}
                 <section className="mb-14 md:mb-16">
                     <div className="flex justify-between items-end mb-6 md:mb-8">
                         <div>
@@ -200,7 +186,6 @@ export default async function Profil() {
                         )}
                     </div>
 
-                    {/* Empty State */}
                     {(!ilanlar || ilanlar.length === 0) && (
                         <div className="text-center py-16 md:py-20">
                             <div className="w-20 h-20 rounded-full bg-primary-fixed/30 flex items-center justify-center mx-auto mb-5">
@@ -222,7 +207,6 @@ export default async function Profil() {
                         </div>
                     )}
 
-                    {/* Listings Grid */}
                     {ilanlar && ilanlar.length > 0 && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
                             {ilanlar.map((ilan: any, index: number) => {
@@ -237,7 +221,6 @@ export default async function Profil() {
                                         style={{ animationDelay: `${index * 80}ms` }}
                                     >
                                         <Link href={`/ilanlar/${ilan.id}`} className="no-underline block">
-                                            {/* Image */}
                                             <div className="aspect-[4/5] rounded-xl overflow-hidden mb-4 relative bg-surface-container-high">
                                                 {foto ? (
                                                     <img
@@ -251,18 +234,15 @@ export default async function Profil() {
                                                     </div>
                                                 )}
 
-                                                {/* Age Badge */}
                                                 <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-primary-container shadow-sm">
                                                     {getAgeLabel(ilan.age_months)}
                                                 </div>
 
-                                                {/* Status Badge */}
                                                 <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm ${status.bg}`}>
                                                     {status.text}
                                                 </div>
                                             </div>
 
-                                            {/* Card Info */}
                                             <div className="px-1">
                                                 <div className="flex justify-between items-start mb-1">
                                                     <h4 className="text-lg md:text-xl font-bold text-on-surface font-headline group-hover:text-primary transition-colors">
@@ -279,7 +259,6 @@ export default async function Profil() {
                                             </div>
                                         </Link>
 
-                                        {/* Actions */}
                                         <div className="flex gap-2 mt-3 px-1">
                                             <Link
                                                 href={`/ilanlar/${ilan.id}`}
@@ -298,7 +277,6 @@ export default async function Profil() {
                                 )
                             })}
 
-                            {/* Add New Pet Card */}
                             <Link
                                 href="/ilan-olustur"
                                 className="aspect-[4/5] rounded-xl border-4 border-dashed border-outline-variant bg-surface-container-low flex flex-col items-center justify-center p-8 group hover:border-primary-container transition-colors cursor-pointer no-underline"
@@ -316,16 +294,12 @@ export default async function Profil() {
                     )}
                 </section>
 
-                {/* ═══════════════════════════════════════════ */}
-                {/* ACCOUNT SETTINGS SECTION                    */}
-                {/* ═══════════════════════════════════════════ */}
                 <section className="bg-surface-container-low rounded-xl p-6 md:p-8 mb-14 md:mb-16">
                     <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-6">
                         Hesap Ayarları
                     </h3>
 
                     <div className="space-y-1">
-                        {/* Account Settings */}
                         <div className="flex justify-between items-center py-4 px-4 hover:bg-surface-container-high rounded-lg transition-colors cursor-pointer group">
                             <div className="flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary-container editorial-shadow">
@@ -341,7 +315,6 @@ export default async function Profil() {
                             </span>
                         </div>
 
-                        {/* Privacy & Security */}
                         <div className="flex justify-between items-center py-4 px-4 hover:bg-surface-container-high rounded-lg transition-colors cursor-pointer group">
                             <div className="flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary-container editorial-shadow">
@@ -357,7 +330,6 @@ export default async function Profil() {
                             </span>
                         </div>
 
-                        {/* Notifications */}
                         <div className="flex justify-between items-center py-4 px-4 hover:bg-surface-container-high rounded-lg transition-colors cursor-pointer group">
                             <div className="flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary-container editorial-shadow">
@@ -373,7 +345,6 @@ export default async function Profil() {
                             </span>
                         </div>
 
-                        {/* Help & Support */}
                         <div className="flex justify-between items-center py-4 px-4 hover:bg-surface-container-high rounded-lg transition-colors cursor-pointer group">
                             <div className="flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary-container editorial-shadow">
@@ -389,10 +360,8 @@ export default async function Profil() {
                             </span>
                         </div>
 
-                        {/* Divider */}
                         <div className="border-t border-outline-variant/15 my-2" />
 
-                        {/* Logout */}
                         <Link
                             href="/cikis"
                             className="flex justify-between items-center py-4 px-4 hover:bg-error-container/30 rounded-lg transition-colors cursor-pointer group no-underline"
@@ -410,12 +379,9 @@ export default async function Profil() {
                     </div>
                 </section>
 
-                {/* ═══════════════════════════════════════════ */}
-                {/* FOOTER INFO                                 */}
-                {/* ═══════════════════════════════════════════ */}
                 <div className="text-center pb-8">
                     <p className="text-[11px] text-on-surface-variant/50 font-bold uppercase tracking-widest">
-                        PawBuddy · Güvenli Sahiplendirme Platformu
+                        Sahiplendir · Güvenli Sahiplendirme Platformu
                     </p>
                     <p className="text-[10px] text-on-surface-variant/30 mt-1">
                         Verileriniz KVKK kapsamında korunmaktadır.

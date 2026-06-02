@@ -1,0 +1,17 @@
+# Command Code
+.commandcode/
+
+# Environment
+.env.local
+.env*.local
+
+# Dependencies
+node_modules/
+
+# Build
+.next/
+dist/
+
+# OS
+.DS_Store
+Thumbs.db

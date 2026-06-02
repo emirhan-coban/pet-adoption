@@ -4,6 +4,8 @@ import { type Metadata } from 'next'
 import Header from '../../components/Header'
 import BottomNav from '../../components/BottomNav'
 import ImageCarousel from '../../components/ImageCarousel'
+import FavoriButon from '../../components/FavoriButon'
+import RaporlaModal from '../../components/RaporlaModal'
 import Link from 'next/link'
 
 export async function generateMetadata(
@@ -33,11 +35,11 @@ export async function generateMetadata(
   return {
     title,
     description,
-    alternates: { canonical: `https://sahiplendir.tr/ilanlar/${id}` },
+    alternates: { canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://sahiplendir.tr'}/ilanlar/${id}` },
     openGraph: {
       title,
       description,
-      url: `https://sahiplendir.tr/ilanlar/${id}`,
+      url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://sahiplendir.tr'}/ilanlar/${id}`,
       type: 'article',
       ...(foto && { images: [{ url: foto, width: 1200, height: 630, alt: ilan.name }] }),
     },
@@ -50,7 +52,8 @@ export async function generateMetadata(
   }
 }
 
-function formatAge(months: number): string {
+function formatAge(months: number | null): string {
+  if (months == null) return 'Belirtilmemiş'
   if (months < 1) return 'Yavru'
   if (months < 12) return `${months} Aylık`
   const years = Math.floor(months / 12)
@@ -70,10 +73,11 @@ function formatPetType(type: string): string {
 }
 
 function formatGender(gender: string): string {
-  return gender === 'female' ? 'Dişi' : 'Erkek'
+  return gender === 'female' ? 'Dişi' : gender === 'male' ? 'Erkek' : 'Belirtilmemiş'
 }
 
-function getAgeLabel(months: number): string {
+function getAgeLabel(months: number | null): string {
+  if (months == null) return 'Belirtilmemiş'
   if (months < 6) return 'Yavru'
   if (months < 24) return 'Genç'
   return 'Yetişkin'
@@ -92,7 +96,6 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
 
   if (error || !ilan) notFound()
 
-  // Fetch poster info separately (may not have FK relationship)
   let ilanSahibi: any = null
   if (ilan.user_id) {
     const { data: userData } = await supabase
@@ -107,7 +110,6 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
   const tumFotolar = fotograflar.map((f: any) => f.media_url)
   const healthStatus = ilan.health_status as any
 
-  // Health & personality traits
   const traits: { icon: string; label: string; active: boolean }[] = [
     { icon: 'vaccines', label: 'Aşılı', active: !!healthStatus?.vaccinated },
     { icon: 'content_cut', label: 'Kısırlaştırılmış', active: !!healthStatus?.neutered },
@@ -122,7 +124,6 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
       <Header />
 
       <main className="pt-20 pb-32 md:pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
-        {/* Back link */}
         <div className="mb-4 pt-2">
           <Link
             href="/"
@@ -135,16 +136,10 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
           </Link>
         </div>
 
-        {/* Image Carousel */}
         <ImageCarousel images={tumFotolar} alt={ilan.name} />
 
-        {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-          {/* Main Details */}
           <div className="lg:col-span-8 space-y-8">
-
-            {/* Title & Key Info */}
             <div className="space-y-4">
               <div className="flex flex-wrap justify-between items-end gap-4">
                 <div>
@@ -155,17 +150,17 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
                     {ilan.name}
                   </h2>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   <span className="bg-primary-container/10 text-on-primary-container px-4 py-2 rounded-full text-sm font-semibold">
                     {getAgeLabel(ilan.age_months)}
                   </span>
                   <span className="bg-secondary-container/30 text-on-secondary-container px-4 py-2 rounded-full text-sm font-semibold">
                     {formatGender(ilan.gender)}
                   </span>
+                  <FavoriButon listingId={id} />
                 </div>
               </div>
 
-              {/* Info bar */}
               <div className="flex flex-wrap items-center gap-x-6 gap-y-3 py-6 border-y border-outline-variant/15">
                 {ilan.breed && (
                   <>
@@ -203,7 +198,6 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
-            {/* Description */}
             {ilan.description && (
               <section className="space-y-4">
                 <h3 className="text-2xl font-bold font-headline">
@@ -215,7 +209,6 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
               </section>
             )}
 
-            {/* Health & Traits Bento Grid */}
             {activeTraits.length > 0 && (
               <section className="space-y-6">
                 <h3 className="text-2xl font-bold font-headline">Sağlık & Özellikler</h3>
@@ -225,9 +218,7 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
                       key={trait.label}
                       className="bg-surface-container-low p-6 rounded-xl flex flex-col items-center text-center gap-3 transition-transform hover:-translate-y-1"
                     >
-                      <span
-                        className="material-symbols-outlined text-primary-container scale-125 icon-fill"
-                      >
+                      <span className="material-symbols-outlined text-primary-container scale-125 icon-fill">
                         {trait.icon}
                       </span>
                       <span className="font-bold text-sm">{trait.label}</span>
@@ -237,7 +228,6 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
               </section>
             )}
 
-            {/* Location Section */}
             <section className="space-y-4">
               <h3 className="text-2xl font-bold font-headline">
                 {ilan.name} ile Nerede Buluşabilirsin?
@@ -261,13 +251,8 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
             </section>
           </div>
 
-          {/* Sidebar / CTA Card */}
           <aside className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
-
-            {/* Sticky Adoption Card */}
             <div className="bg-surface-container-lowest rounded-xl p-6 lg:p-8 editorial-shadow space-y-6 border border-outline-variant/10">
-
-              {/* Poster Info */}
               {ilanSahibi && (
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-full bg-gradient-to-tl from-orange-700 to-orange-400 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
@@ -299,7 +284,6 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
                 </div>
               )}
 
-              {/* CTA Buttons */}
               <div className="space-y-3">
                 <Link
                   href={`/mesajlar/${ilan.id}`}
@@ -314,6 +298,7 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
                   <span className="material-symbols-outlined text-lg">mail</span>
                   Mesaj Gönder
                 </Link>
+                <RaporlaModal listingId={id} />
               </div>
 
               <div className="pt-5 border-t border-outline-variant/10">
@@ -323,7 +308,6 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
-            {/* Safety Tip */}
             <div className="bg-orange-50 p-5 lg:p-6 rounded-xl border border-orange-100/50">
               <div className="flex gap-3">
                 <span className="material-symbols-outlined text-primary-container flex-shrink-0">
@@ -341,7 +325,6 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
         </div>
       </main>
 
-      {/* Mobile Bottom Nav */}
       <BottomNav />
     </>
   )
