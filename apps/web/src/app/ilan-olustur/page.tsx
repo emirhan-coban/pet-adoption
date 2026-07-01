@@ -105,6 +105,10 @@ export default function IlanOlustur() {
             }
         }
 
+        if (fotograflar.length < 1) {
+            errors.push('En az 1 fotoğraf eklemeniz zorunludur.')
+        }
+
         if (fotograflar.length > MAX_PHOTOS) {
             errors.push(`En fazla ${MAX_PHOTOS} fotoğraf yükleyebilirsiniz.`)
         }
@@ -119,8 +123,9 @@ export default function IlanOlustur() {
             }
         }
 
-        if (form.description && checkCommercialSale(form.description)) {
-            errors.push('İlan açıklamasında fiyat/ücret bilgisi yer alamaz. Bu platform sadece ücretsiz sahiplendirme içindir.')
+        const ticariAlanlar = [form.name, form.breed, form.description].filter(Boolean).join(' ')
+        if (checkCommercialSale(ticariAlanlar)) {
+            errors.push('İlan bilgilerinde fiyat/ücret ifadesi yer alamaz. Bu platform yalnızca ücretsiz sahiplendirme içindir.')
         }
 
         return errors
@@ -140,11 +145,11 @@ export default function IlanOlustur() {
             return
         }
 
-        let pet_type_db = 'cat';
+        let pet_type_db = 'other';
         if (form.pet_type === 'Köpek') pet_type_db = 'dog';
+        else if (form.pet_type === 'Kedi') pet_type_db = 'cat';
         else if (form.pet_type === 'Kuş') pet_type_db = 'bird';
         else if (form.pet_type === 'Tavşan') pet_type_db = 'rabbit';
-        else if (form.pet_type === 'Kedi') pet_type_db = 'cat';
 
         let gender_db = 'unknown';
         if (form.gender === 'Erkek') gender_db = 'male';
@@ -242,15 +247,10 @@ export default function IlanOlustur() {
             <Header />
 
             <main className="pt-24 pb-32 px-6 max-w-4xl mx-auto w-full flex-grow">
-                {/* Progress Indicator */}
+                {/* Header */}
                 <section className="mb-12">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-3xl font-extrabold tracking-tight text-on-surface font-headline">İlan Ver</h2>
-                        <span className="text-sm font-semibold text-primary px-4 py-1 bg-primary-fixed rounded-full font-headline">Adım 2 / 3</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
-                        <div className="w-2/3 h-full bg-gradient-to-r from-primary to-primary-container"></div>
-                    </div>
+                    <h2 className="text-3xl font-extrabold tracking-tight text-on-surface font-headline">İlan Ver</h2>
+                    <p className="text-on-surface-variant mt-1">Evcil dostunuz için sahiplendirme ilanı oluşturun.</p>
                 </section>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -286,6 +286,7 @@ export default function IlanOlustur() {
                                         <option>Kedi</option>
                                         <option>Kuş</option>
                                         <option>Tavşan</option>
+                                        <option>Diğer</option>
                                     </select>
                                 </div>
                                 <div className="space-y-2">
@@ -456,7 +457,7 @@ export default function IlanOlustur() {
                             </div>
                             <p className="text-xs text-on-surface-variant flex items-center gap-2">
                                 <span className="material-symbols-outlined text-base">info</span>
-                                En az 3, en fazla {MAX_PHOTOS} adet net fotoğraf ekleyin. Her dosya max {MAX_PHOTO_SIZE_MB}MB.
+                                En az 1 fotoğraf zorunludur. 3+ net fotoğraf eklemenizi öneririz. Her dosya max {MAX_PHOTO_SIZE_MB}MB.
                             </p>
                             <p className="text-[10px] text-on-surface-variant/50">{fotograflar.length}/{MAX_PHOTOS} fotoğraf</p>
                         </div>

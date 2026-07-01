@@ -349,13 +349,6 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
 
             <div className="fixed bottom-16 md:bottom-0 left-0 w-full px-4 md:px-6 pb-3 md:pb-5 pt-2 z-40">
                 <div className="max-w-3xl mx-auto bg-white/90 backdrop-blur-xl p-2 md:p-3 rounded-full shadow-lg flex items-center gap-1.5 md:gap-2 border border-outline-variant/10 editorial-shadow">
-                    <button
-                        className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low transition-colors flex-shrink-0"
-                        title="Dosya ekle"
-                    >
-                        <span className="material-symbols-outlined text-[20px] md:text-[22px]">add_circle</span>
-                    </button>
-
                     <input
                         ref={inputRef}
                         value={yeniMesaj}
@@ -366,13 +359,6 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
                         className="flex-grow bg-transparent border-none focus:ring-0 focus:outline-none text-sm font-medium placeholder:text-stone-400 text-on-surface py-2 px-1"
                     />
                     <span className="text-[10px] text-on-surface-variant/50 flex-shrink-0 w-10 text-right">{yeniMesaj.length}/500</span>
-
-                    <button
-                        className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low transition-colors flex-shrink-0"
-                        title="Fotoğraf gönder"
-                    >
-                        <span className="material-symbols-outlined text-[20px] md:text-[22px]">image</span>
-                    </button>
 
                     <button
                         onClick={mesajGonder}

@@ -89,7 +89,7 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
 
   const { data: ilan, error } = await supabase
     .from('listings')
-    .select('*, listing_media(media_url, is_primary)')
+    .select('*, listing_media(media_url, is_primary), traits')
     .eq('id', id)
     .eq('status', 'active')
     .single()
@@ -109,15 +109,26 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
   const fotograflar = ilan.listing_media ?? []
   const tumFotolar = fotograflar.map((f: any) => f.media_url)
   const healthStatus = ilan.health_status as any
+  const traitsData = ilan.traits as any
 
-  const traits: { icon: string; label: string; active: boolean }[] = [
+  const saglikOzellikleri: { icon: string; label: string; active: boolean }[] = [
     { icon: 'vaccines', label: 'Aşılı', active: !!healthStatus?.vaccinated },
     { icon: 'content_cut', label: 'Kısırlaştırılmış', active: !!healthStatus?.neutered },
     { icon: 'pest_control', label: 'Parazit Tedavisi', active: !!healthStatus?.dewormed },
     { icon: 'verified_user', label: 'Mikroçipli', active: !!healthStatus?.microchipped },
   ]
 
-  const activeTraits = traits.filter((t) => t.active)
+  const karakterOzellikleri: { icon: string; label: string; active: boolean }[] = [
+    { icon: 'favorite', label: 'Sevecen', active: !!traitsData?.friendly },
+    { icon: 'home', label: 'İç Mekan', active: !!traitsData?.indoor },
+    { icon: 'child_care', label: 'Çocuklarla Uyumlu', active: !!traitsData?.good_with_kids },
+    { icon: 'pets', label: 'Diğer Hayvanlarla Uyumlu', active: !!traitsData?.good_with_pets },
+    { icon: 'school', label: 'Eğitimli', active: !!traitsData?.trained },
+    { icon: 'volume_off', label: 'Sessiz', active: !!traitsData?.quiet },
+  ]
+
+  const activeSaglik = saglikOzellikleri.filter((t) => t.active)
+  const activeKarakter = karakterOzellikleri.filter((t) => t.active)
 
   return (
     <>
@@ -209,22 +220,35 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
               </section>
             )}
 
-            {activeTraits.length > 0 && (
+            {(activeSaglik.length > 0 || activeKarakter.length > 0) && (
               <section className="space-y-6">
                 <h3 className="text-2xl font-bold font-headline">Sağlık & Özellikler</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {activeTraits.map((trait) => (
-                    <div
-                      key={trait.label}
-                      className="bg-surface-container-low p-6 rounded-xl flex flex-col items-center text-center gap-3 transition-transform hover:-translate-y-1"
-                    >
-                      <span className="material-symbols-outlined text-primary-container scale-125 icon-fill">
-                        {trait.icon}
-                      </span>
-                      <span className="font-bold text-sm">{trait.label}</span>
+                {activeSaglik.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-3">Sağlık Durumu</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {activeSaglik.map((trait) => (
+                        <div key={trait.label} className="bg-surface-container-low p-6 rounded-xl flex flex-col items-center text-center gap-3 transition-transform hover:-translate-y-1">
+                          <span className="material-symbols-outlined text-primary-container scale-125 icon-fill">{trait.icon}</span>
+                          <span className="font-bold text-sm">{trait.label}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+                {activeKarakter.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-3">Karakter</p>
+                    <div className="flex flex-wrap gap-2">
+                      {activeKarakter.map((trait) => (
+                        <span key={trait.label} className="flex items-center gap-1.5 bg-primary-fixed/40 text-on-primary-container px-3 py-1.5 rounded-full text-sm font-semibold">
+                          <span className="material-symbols-outlined text-base">{trait.icon}</span>
+                          {trait.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </section>
             )}
 
@@ -289,22 +313,12 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
                   href={`/mesajlar/${ilan.id}`}
                   className="w-full btn-gradient py-4 rounded-full text-center block no-underline text-sm lg:text-base shadow-lg shadow-orange-500/20"
                 >
-                  Sahiplenme Başvurusu Yap
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined text-lg">mail</span>
+                    İlan Sahibiyle İletişime Geç
+                  </span>
                 </Link>
-                <Link
-                  href={`/mesajlar/${ilan.id}`}
-                  className="w-full bg-surface-container-highest text-on-surface-variant font-bold py-4 rounded-full flex items-center justify-center gap-2 no-underline text-sm lg:text-base transition-transform active:scale-95"
-                >
-                  <span className="material-symbols-outlined text-lg">mail</span>
-                  Mesaj Gönder
-                </Link>
-                <RaporlaModal listingId={id} />
-              </div>
-
-              <div className="pt-5 border-t border-outline-variant/10">
-                <p className="text-[10px] text-center text-on-surface-variant/60 font-bold uppercase tracking-widest">
-                  Ortalama yanıt süresi: 2 saat
-                </p>
+                <RaporlaModal listingId={id} listingOwnerId={ilan.user_id} />
               </div>
             </div>
 
