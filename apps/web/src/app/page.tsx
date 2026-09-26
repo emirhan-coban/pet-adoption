@@ -5,6 +5,7 @@ import BottomNav from './components/BottomNav'
 import Filtreler from './components/Filtreler'
 import PetCard from './components/PetCard'
 import Link from 'next/link'
+import type { PetGender, PetType } from '@/lib/database.types'
 
 export default async function Home({
   searchParams,
@@ -26,8 +27,8 @@ export default async function Home({
     .order('created_at', { ascending: false })
     .range(from, to)
 
-  if (filters.pet_type) query = query.eq('pet_type', filters.pet_type)
-  if (filters.gender) query = query.eq('gender', filters.gender)
+  if (filters.pet_type) query = query.eq('pet_type', filters.pet_type as PetType)
+  if (filters.gender) query = query.eq('gender', filters.gender as PetGender)
   if (filters.city) query = query.ilike('city', `%${filters.city}%`)
 
   const { data: ilanlar, error, count } = await query
@@ -98,20 +99,20 @@ export default async function Home({
         ) : (
           <>
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
-              {ilanlar.map((ilan: any, index: number) => {
-                const foto = ilan.listing_media?.find((m: any) => m.is_primary)?.media_url
+              {ilanlar.map((ilan, index) => {
+                const foto = ilan.listing_media?.find((m) => m.is_primary)?.media_url
 
                 return (
                   <PetCard
                     key={ilan.id}
                     id={ilan.id}
-                    name={ilan.name}
+                    name={ilan.name ?? 'İsimsiz'}
                     petType={ilan.pet_type}
                     gender={ilan.gender}
                     city={ilan.city}
-                    district={ilan.district}
+                    district={ilan.district ?? undefined}
                     ageMonths={ilan.age_months}
-                    description={ilan.description}
+                    description={ilan.description ?? undefined}
                     photoUrl={foto}
                     index={index}
                   />

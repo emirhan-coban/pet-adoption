@@ -23,10 +23,6 @@ export default function FavoriButon({ listingId }: FavoriButonProps) {
     getUser()
   }, [])
 
-  useEffect(() => {
-    if (userId) checkFavorite()
-  }, [userId, listingId])
-
   async function checkFavorite() {
     if (!userId) return
     const { data } = await supabase
@@ -38,6 +34,12 @@ export default function FavoriButon({ listingId }: FavoriButonProps) {
     
     setIsFavorite(!!data)
   }
+
+  useEffect(() => {
+    if (!userId) return
+    const timer = window.setTimeout(() => checkFavorite(), 0)
+    return () => window.clearTimeout(timer)
+  }, [userId, listingId])
 
   async function toggleFavorite() {
     if (!userId) return

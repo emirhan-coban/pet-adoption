@@ -355,11 +355,11 @@ export default function Giris() {
                                                 <Link href="/gizlilik" className="text-primary font-semibold hover:underline">
                                                     KVKK Aydınlatma Metni
                                                 </Link>
-                                                'ni ve{' '}
+                                                &apos;ni ve{' '}
                                                 <Link href="/kosullar" className="text-primary font-semibold hover:underline">
                                                     Kullanım Koşulları
                                                 </Link>
-                                                'nı okudum, kabul ediyorum.
+                                                &apos;nı okudum, kabul ediyorum.
                                             </label>
                                         </div>
                                     )}

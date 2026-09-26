@@ -38,6 +38,9 @@ COMMENT ON COLUMN users.trust_score IS '0-100 arası güven skoru. Şikayetlerle
 
 -- -----------------------
 -- CORPORATE PROFILES
+-- NOT: Bu tablo şu an web/mobile UI'da hiç kullanılmıyor (kayıt formu,
+-- belge yükleme, admin onay ekranı yok). Bilinçli olarak gelecekteki
+-- "kurumsal/barınak hesabı" özelliği için ayrılmış, kaldırılmadı.
 -- -----------------------
 
 CREATE TABLE corporate_profiles (
@@ -130,6 +133,10 @@ CREATE INDEX idx_messages_flagged      ON messages(ai_flagged) WHERE ai_flagged 
 
 -- -----------------------
 -- APPLICATIONS (BAŞVURULAR)
+-- NOT: `listings.adoption_mode = 'application_form'` akışı için tasarlandı
+-- ama şu an hiç UI'da kullanılmıyor (ilan oluşturma formu bu modu hiç
+-- seçtirmiyor, başvuru formu/onay ekranı yok). Bilinçli olarak gelecekteki
+-- özellik için ayrılmış, kaldırılmadı.
 -- -----------------------
 
 CREATE TABLE applications (

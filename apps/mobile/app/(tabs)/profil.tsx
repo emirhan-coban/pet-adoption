@@ -62,7 +62,7 @@ export default function Profil() {
       setUser(user)
 
       const [profilRes, ilanlarRes, sahiplendirilenRes] = await Promise.all([
-        supabase.from('users').select('*').eq('id', user.id).single(),
+        supabase.from('users').select('id, full_name, avatar_url, trust_score, role, is_active, created_at').eq('id', user.id).single(),
         supabase
           .from('listings')
           .select('*, listing_media(media_url, is_primary)')

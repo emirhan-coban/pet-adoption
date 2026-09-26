@@ -136,7 +136,7 @@ export default function Gizlilik() {
                             6. KVKK Kapsamındaki Haklarınız
                         </h2>
                         <p className="text-on-surface-variant leading-relaxed mb-4">
-                            KVKK'nın 11. maddesi uyarınca aşağıdaki haklara sahipsiniz:
+                            KVKK&apos;nın 11. maddesi uyarınca aşağıdaki haklara sahipsiniz:
                         </p>
                         <ul className="list-disc list-inside space-y-2 text-on-surface-variant">
                             <li>Kişisel verilerinizin işlenip işlenmediğini öğrenme</li>
@@ -144,7 +144,7 @@ export default function Gizlilik() {
                             <li>İşlenme amacını ve bunların amacına uygun kullanılıp kullanılmadığını öğrenme</li>
                             <li>Yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri bilme</li>
                             <li>Eksik veya yanlış işlenmiş olması halinde düzeltilmesini isteme</li>
-                            <li>KVKK'nın 7. maddesi kapsamında silinmesini veya yok edilmesini isteme</li>
+                            <li>KVKK&apos;nın 7. maddesi kapsamında silinmesini veya yok edilmesini isteme</li>
                             <li>Düzeltme, silme veya yok etme işlemlerinin aktarıldığı üçüncü kişilere bildirilmesini isteme</li>
                             <li>İşlenen verilerin münhasıran otomatik sistemler vasıtasıyla analiz edilmesi suretiyle aleyhinize bir sonucun ortaya çıkmasına itiraz etme</li>
                             <li>Kanuna aykırı işlenmesi sebebiyle zarara uğramanız halinde zararın giderilmesini talep etme</li>

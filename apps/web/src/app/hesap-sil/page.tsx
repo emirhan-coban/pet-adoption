@@ -1,18 +1,29 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Header from '../components/Header'
 
+const ONAY_METNI = 'SİL'
+
 export default function HesapSil() {
     const supabase = createClient()
     const router = useRouter()
+    const [sifreliHesap, setSifreliHesap] = useState<boolean | null>(null)
     const [sifre, setSifre] = useState('')
+    const [onayMetni, setOnayMetni] = useState('')
     const [onay, setOnay] = useState(false)
     const [yukleniyor, setYukleniyor] = useState(false)
     const [mesaj, setMesaj] = useState('')
     const [mesajTuru, setMesajTuru] = useState<'hata' | 'basari'>('hata')
+
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            const varsaSifreliKimlik = user?.identities?.some((k) => k.provider === 'email') ?? true
+            setSifreliHesap(varsaSifreliKimlik)
+        })
+    }, [supabase])
 
     async function hesapSil() {
         if (!onay) {
@@ -20,8 +31,13 @@ export default function HesapSil() {
             setMesajTuru('hata')
             return
         }
-        if (!sifre) {
+        if (sifreliHesap && !sifre) {
             setMesaj('Lütfen şifrenizi girin.')
+            setMesajTuru('hata')
+            return
+        }
+        if (!sifreliHesap && onayMetni.trim().toUpperCase() !== ONAY_METNI) {
+            setMesaj(`Lütfen onay kutusuna "${ONAY_METNI}" yazın.`)
             setMesajTuru('hata')
             return
         }
@@ -29,7 +45,6 @@ export default function HesapSil() {
         setYukleniyor(true)
         setMesaj('')
 
-        // Şifre doğrulama
         const { data: { user }, error: authError } = await supabase.auth.getUser()
         if (authError || !user) {
             setMesaj('Oturum süresi dolmuş. Lütfen tekrar giriş yapın.')
@@ -38,34 +53,37 @@ export default function HesapSil() {
             return
         }
 
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: user.email!,
-            password: sifre
-        })
+        // Şifreli hesaplarda ek doğrulama olarak şifre tekrar kontrol edilir.
+        // Google ile giriş yapan hesapların şifresi yok, bu adım atlanır.
+        if (sifreliHesap) {
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email: user.email!,
+                password: sifre
+            })
 
-        if (signInError) {
-            setMesaj('Şifre hatalı. Lütfen tekrar deneyin.')
+            if (signInError) {
+                setMesaj('Şifre hatalı. Lütfen tekrar deneyin.')
+                setMesajTuru('hata')
+                setYukleniyor(false)
+                return
+            }
+        }
+
+        const cevap = await fetch('/api/hesap-sil', { method: 'POST' })
+
+        if (!cevap.ok) {
+            const { error } = await cevap.json().catch(() => ({ error: 'Bilinmeyen hata' }))
+            setMesaj('Hesap silinirken hata oluştu: ' + error)
             setMesajTuru('hata')
             setYukleniyor(false)
             return
         }
 
-        // Hesap silme fonksiyonunu çağır
-        const { error: deleteError } = await supabase.rpc('delete_user_account')
-
-        if (deleteError) {
-            setMesaj('Hesap silinirken hata oluştu: ' + deleteError.message)
-            setMesajTuru('hata')
-            setYukleniyor(false)
-            return
-        }
-
-        // Auth oturumunu kapat
         await supabase.auth.signOut()
 
         setMesaj('Hesabınız başarıyla silindi. Yönlendiriliyorsunuz...')
         setMesajTuru('basari')
-        
+
         setTimeout(() => {
             router.push('/')
         }, 2000)
@@ -102,23 +120,40 @@ export default function HesapSil() {
                 </div>
 
                 <div className="bg-surface-container-low rounded-xl p-6 space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-on-surface-variant ml-1">
-                            Şifrenizi Onaylayın
-                        </label>
-                        <div className="relative">
-                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-lg">
-                                lock
-                            </span>
+                    {sifreliHesap && (
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold uppercase tracking-widest text-on-surface-variant ml-1">
+                                Şifrenizi Onaylayın
+                            </label>
+                            <div className="relative">
+                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-lg">
+                                    lock
+                                </span>
+                                <input
+                                    type="password"
+                                    placeholder="••••••••"
+                                    value={sifre}
+                                    onChange={(e) => setSifre(e.target.value)}
+                                    className="w-full bg-surface-container-high border-none rounded-xl pl-12 pr-4 py-3.5 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary/50 transition-all"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {sifreliHesap === false && (
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold uppercase tracking-widest text-on-surface-variant ml-1">
+                                Onaylamak için &quot;{ONAY_METNI}&quot; yazın
+                            </label>
                             <input
-                                type="password"
-                                placeholder="••••••••"
-                                value={sifre}
-                                onChange={(e) => setSifre(e.target.value)}
-                                className="w-full bg-surface-container-high border-none rounded-xl pl-12 pr-4 py-3.5 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary/50 transition-all"
+                                type="text"
+                                placeholder={ONAY_METNI}
+                                value={onayMetni}
+                                onChange={(e) => setOnayMetni(e.target.value)}
+                                className="w-full bg-surface-container-high border-none rounded-xl px-4 py-3.5 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary/50 transition-all"
                             />
                         </div>
-                    </div>
+                    )}
 
                     <div className="flex items-start gap-3 p-4 bg-surface-container-high rounded-xl">
                         <input
@@ -155,7 +190,11 @@ export default function HesapSil() {
                         </button>
                         <button
                             onClick={hesapSil}
-                            disabled={yukleniyor || !onay || !sifre}
+                            disabled={
+                                yukleniyor ||
+                                !onay ||
+                                (sifreliHesap ? !sifre : onayMetni.trim().toUpperCase() !== ONAY_METNI)
+                            }
                             className="flex-1 bg-error text-white font-bold py-4 rounded-full shadow-md active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100"
                         >
                             {yukleniyor ? (

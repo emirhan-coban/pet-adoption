@@ -60,6 +60,9 @@ export default function IlanDetay() {
       if (error || !data) { router.back(); return }
       setIlan(data)
 
+      // Görüntülenme sayacı — hata olursa ekranı etkilememesi için sonucu yutuyoruz.
+      supabase.rpc('increment_view_count', { listing_uuid: id }).then(() => {}, () => {})
+
       if (data.user_id) {
         const { data: owner } = await supabase
           .from('users')
@@ -147,6 +150,9 @@ export default function IlanDetay() {
           {/* Name & tags */}
           <View style={styles.nameRow}>
             <Text style={styles.petName}>{ilan.name}</Text>
+            {ilan.view_count > 0 && (
+              <Text style={styles.viewCount}>👁 {ilan.view_count} kez görüntülendi</Text>
+            )}
             <View style={styles.tagsRow}>
               <View style={styles.tagChip}>
                 <Text style={styles.tagText}>{getAgeLabel(ilan.age_months)}</Text>
@@ -380,6 +386,12 @@ const styles = StyleSheet.create({
     color: Colors.onSurface,
     letterSpacing: -1,
     lineHeight: 42,
+  },
+  viewCount: {
+    fontSize: 12,
+    fontFamily: Fonts.body,
+    color: Colors.onSurfaceVariant,
+    width: '100%',
   },
   tagsRow: {
     flexDirection: 'row',

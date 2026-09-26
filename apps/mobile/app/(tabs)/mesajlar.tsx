@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 
 interface Conversation {
   listing_id: string
+  other_user_id: string
   listing_name: string
   listing_photo: string | null
   other_user_name: string
@@ -57,52 +58,41 @@ export default function MesajlarListesi() {
       if (!user) { router.replace('/(auth)/giris'); return }
       setUser(user)
 
-      const { data: mesajlar } = await supabase
-        .from('messages')
-        .select('*')
+      // conversation_summaries view'ı (listing_id, kullanıcı çifti) bazında
+      // zaten tekilleştirilmiş satırlar döner, böylece aynı ilana iki farklı
+      // kullanıcı mesaj atsa bile ayrı konuşmalar olarak listelenir.
+      const { data: ozetler } = await supabase
+        .from('conversation_summaries')
+        .select('listing_id, sender_id, receiver_id, last_message, last_message_at, is_read, pet_type, pet_name, city, pet_photo')
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .order('created_at', { ascending: false })
+        .order('last_message_at', { ascending: false })
 
-      if (!mesajlar || mesajlar.length === 0) {
+      if (!ozetler || ozetler.length === 0) {
         setYukleniyor(false)
         return
       }
 
-      const listingMap = new Map<string, any>()
-      for (const m of mesajlar) {
-        if (!listingMap.has(m.listing_id)) listingMap.set(m.listing_id, m)
-      }
-
       const conversations: Conversation[] = []
 
-      for (const [listingId, lastMsg] of listingMap) {
-        const { data: ilan } = await supabase
-          .from('listings')
-          .select('*, listing_media(media_url, is_primary)')
-          .eq('id', listingId)
-          .single()
-        if (!ilan) continue
-
-        const otherUserId = lastMsg.sender_id === user.id ? lastMsg.receiver_id : lastMsg.sender_id
+      for (const ozet of ozetler) {
+        const otherUserId = ozet.sender_id === user.id ? ozet.receiver_id : ozet.sender_id
         const { data: otherUser } = await supabase
           .from('users')
           .select('full_name')
           .eq('id', otherUserId)
           .single()
 
-        const primaryPhoto = ilan.listing_media?.find((m: any) => m.is_primary)?.media_url
-          || ilan.listing_media?.[0]?.media_url || null
-
         conversations.push({
-          listing_id: listingId,
-          listing_name: ilan.name || 'İsimsiz',
-          listing_photo: primaryPhoto,
+          listing_id: ozet.listing_id,
+          other_user_id: otherUserId,
+          listing_name: ozet.pet_name || 'İsimsiz',
+          listing_photo: ozet.pet_photo || null,
           other_user_name: otherUser?.full_name || 'Kullanıcı',
-          last_message: lastMsg.content,
-          last_message_time: lastMsg.created_at,
-          unread: lastMsg.sender_id !== user.id,
-          pet_type: ilan.pet_type,
-          city: ilan.city,
+          last_message: ozet.last_message,
+          last_message_time: ozet.last_message_at,
+          unread: !ozet.is_read && ozet.sender_id !== user.id,
+          pet_type: ozet.pet_type,
+          city: ozet.city,
         })
       }
 
@@ -157,11 +147,14 @@ export default function MesajlarListesi() {
       ) : (
         <FlatList
           data={konusmalar}
-          keyExtractor={(item) => item.listing_id}
+          keyExtractor={(item) => `${item.listing_id}-${item.other_user_id}`}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.conversationCard}
-              onPress={() => router.push(`/mesajlar/${item.listing_id}` as any)}
+              onPress={() => router.push({
+                pathname: '/mesajlar/[listing_id]',
+                params: { listing_id: item.listing_id, with: item.other_user_id },
+              } as any)}
               activeOpacity={0.85}
             >
               {/* Avatar */}

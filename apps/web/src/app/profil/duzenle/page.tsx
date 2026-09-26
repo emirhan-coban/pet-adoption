@@ -25,11 +25,8 @@ export default function ProfilDuzenle() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) { router.push('/giris'); return }
 
-            const { data: profil } = await supabase
-                .from('users')
-                .select('full_name, phone')
-                .eq('id', user.id)
-                .single()
+            const { data: profiller } = await supabase.rpc('get_my_profile')
+            const profil = profiller?.[0]
 
             if (profil) {
                 setForm({
@@ -65,13 +62,11 @@ export default function ProfilDuzenle() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { router.push('/giris'); return }
 
-        const { error } = await supabase
-            .from('users')
-            .update({
-                full_name: form.full_name.trim(),
-                phone: form.phone.trim() || null,
-            })
-            .eq('id', user.id)
+        const { error } = await supabase.rpc('update_my_profile', {
+            p_full_name: form.full_name.trim(),
+            p_phone: form.phone.trim() || null,
+            p_avatar_url: null,
+        })
 
         if (error) {
             setMesaj('Kaydedilirken hata oluştu: ' + error.message)

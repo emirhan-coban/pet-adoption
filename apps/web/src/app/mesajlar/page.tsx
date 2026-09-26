@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 import Header from '../components/Header'
@@ -8,6 +9,7 @@ import BottomNav from '../components/BottomNav'
 
 interface Conversation {
     listing_id: string
+    other_user_id: string
     listing_name: string
     listing_photo: string | null
     other_user_name: string
@@ -20,43 +22,30 @@ interface Conversation {
 
 export default function MesajlarListesi() {
     const supabase = createClient()
-    const [user, setUser] = useState<any>(null)
     const [konusmalar, setKonusmalar] = useState<Conversation[]>([])
     const [yukleniyor, setYukleniyor] = useState(true)
 
-    async function yukleKonusmalar(currentUser: any) {
-        const { data: mesajlar } = await supabase
-            .from('messages')
-            .select('*')
+    // conversation_summaries view'ı (listing_id, kullanıcı çifti) bazında zaten
+    // tekilleştirilmiş satırlar döner, böylece aynı ilana iki farklı kullanıcı
+    // mesaj atsa bile ayrı konuşmalar olarak listelenir.
+    async function yukleKonusmalar(currentUser: User) {
+        const { data: ozetler } = await supabase
+            .from('conversation_summaries')
+            .select('listing_id, sender_id, receiver_id, last_message, last_message_at, is_read, pet_type, pet_name, city, pet_photo')
             .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
-            .order('created_at', { ascending: false })
+            .order('last_message_at', { ascending: false })
 
-        if (!mesajlar || mesajlar.length === 0) {
+        if (!ozetler || ozetler.length === 0) {
             setKonusmalar([])
             setYukleniyor(false)
             return
         }
 
-        const listingMap = new Map<string, any>()
-        for (const m of mesajlar) {
-            if (!listingMap.has(m.listing_id)) {
-                listingMap.set(m.listing_id, m)
-            }
-        }
-
         const conversations: Conversation[] = []
-        for (const [listingId, lastMsg] of listingMap) {
-            const { data: ilan } = await supabase
-                .from('listings')
-                .select('*, listing_media(media_url, is_primary)')
-                .eq('id', listingId)
-                .single()
-
-            if (!ilan) continue
-
-            const otherUserId = lastMsg.sender_id === currentUser.id
-                ? lastMsg.receiver_id
-                : lastMsg.sender_id
+        for (const ozet of ozetler) {
+            const otherUserId = ozet.sender_id === currentUser.id
+                ? ozet.receiver_id
+                : ozet.sender_id
 
             const { data: otherUser } = await supabase
                 .from('users')
@@ -64,20 +53,17 @@ export default function MesajlarListesi() {
                 .eq('id', otherUserId)
                 .single()
 
-            const primaryPhoto = ilan.listing_media?.find((m: any) => m.is_primary)?.media_url
-                || ilan.listing_media?.[0]?.media_url
-                || null
-
             conversations.push({
-                listing_id: listingId,
-                listing_name: ilan.name || 'İsimsiz',
-                listing_photo: primaryPhoto,
+                listing_id: ozet.listing_id,
+                other_user_id: otherUserId,
+                listing_name: ozet.pet_name || 'İsimsiz',
+                listing_photo: ozet.pet_photo || null,
                 other_user_name: otherUser?.full_name || 'Kullanıcı',
-                last_message: lastMsg.content,
-                last_message_time: lastMsg.created_at,
-                unread: !lastMsg.is_read && lastMsg.sender_id !== currentUser.id,
-                pet_type: ilan.pet_type,
-                city: ilan.city,
+                last_message: ozet.last_message,
+                last_message_time: ozet.last_message_at,
+                unread: !ozet.is_read && ozet.sender_id !== currentUser.id,
+                pet_type: ozet.pet_type,
+                city: ozet.city,
             })
         }
 
@@ -89,7 +75,6 @@ export default function MesajlarListesi() {
         async function init() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) { window.location.href = '/giris'; return }
-            setUser(user)
             await yukleKonusmalar(user)
 
             const kanal = supabase
@@ -194,8 +179,8 @@ export default function MesajlarListesi() {
                     <div className="space-y-3">
                         {konusmalar.map((k, index) => (
                             <Link
-                                key={k.listing_id}
-                                href={`/mesajlar/${k.listing_id}`}
+                                key={`${k.listing_id}-${k.other_user_id}`}
+                                href={`/mesajlar/${k.listing_id}?with=${k.other_user_id}`}
                                 className="group flex items-center gap-4 p-4 md:p-5 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 no-underline transition-all hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99] duration-200 animate-fade-in-up editorial-shadow"
                                 style={{ animationDelay: `${index * 60}ms` }}
                             >

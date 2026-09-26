@@ -1,11 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase'
+import type { Database } from '@/lib/database.types'
 import { useRouter } from 'next/navigation'
 import Header from '../components/Header'
 import BottomNav from '../components/BottomNav'
 import Link from 'next/link'
+
+type Profil = Pick<Database['public']['Tables']['users']['Row'], 'id' | 'full_name' | 'avatar_url' | 'trust_score' | 'role' | 'is_active' | 'created_at'>
+type Ilan = Database['public']['Tables']['listings']['Row'] & {
+    listing_media: Pick<Database['public']['Tables']['listing_media']['Row'], 'media_url' | 'is_primary'>[]
+}
 
 function formatAge(months: number | null | undefined): string {
     if (months == null) return 'Belirtilmemiş'
@@ -36,9 +43,9 @@ export default function Profil() {
     const supabase = createClient()
     const router = useRouter()
 
-    const [user, setUser] = useState<any>(null)
-    const [profil, setProfil] = useState<any>(null)
-    const [ilanlar, setIlanlar] = useState<any[]>([])
+    const [user, setUser] = useState<User | null>(null)
+    const [profil, setProfil] = useState<Profil | null>(null)
+    const [ilanlar, setIlanlar] = useState<Ilan[]>([])
     const [sahiplendirilenSayisi, setSahiplendirilenSayisi] = useState(0)
     const [yukleniyor, setYukleniyor] = useState(true)
     const [showAll, setShowAll] = useState(false)
@@ -53,7 +60,7 @@ export default function Profil() {
             setUser(authUser)
 
             const [profilRes, ilanlarRes, sahiplendirilenRes] = await Promise.all([
-                supabase.from('users').select('*').eq('id', authUser.id).single(),
+                supabase.from('users').select('id, full_name, avatar_url, trust_score, role, is_active, created_at').eq('id', authUser.id).single(),
                 supabase.from('listings').select('*, listing_media(media_url, is_primary)').eq('user_id', authUser.id).order('created_at', { ascending: false }),
                 supabase.from('listings').select('*', { count: 'exact', head: true }).eq('user_id', authUser.id).eq('status', 'adopted'),
             ])
@@ -226,8 +233,8 @@ export default function Profil() {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
-                            {gosterilecekIlanlar.map((ilan: any, index: number) => {
-                                const foto = ilan.listing_media?.find((m: any) => m.is_primary)?.media_url
+                            {gosterilecekIlanlar.map((ilan, index) => {
+                                const foto = ilan.listing_media?.find((m) => m.is_primary)?.media_url
                                     || ilan.listing_media?.[0]?.media_url
                                 const status = statusLabel(ilan.status)
 
@@ -236,7 +243,7 @@ export default function Profil() {
                                         <Link href={`/ilanlar/${ilan.id}`} className="no-underline block">
                                             <div className="aspect-[4/5] rounded-xl overflow-hidden mb-4 relative bg-surface-container-high">
                                                 {foto ? (
-                                                    <img src={foto} alt={ilan.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                    <img src={foto} alt={ilan.name ?? 'İlan görseli'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-surface-container-high to-surface-dim">
                                                         <span className="material-symbols-outlined text-6xl text-outline-variant/40">pets</span>
@@ -253,7 +260,7 @@ export default function Profil() {
                                             <div className="px-1">
                                                 <div className="flex justify-between items-start mb-1">
                                                     <h4 className="text-lg md:text-xl font-bold text-on-surface font-headline group-hover:text-primary transition-colors">
-                                                        {ilan.name}
+                        {ilan.name ?? 'İsimsiz'}
                                                     </h4>
                                                 </div>
                                                 <p className="text-on-surface-variant text-sm flex items-center gap-1">

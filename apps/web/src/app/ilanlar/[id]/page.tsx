@@ -30,7 +30,7 @@ export async function generateMetadata(
   const description = ilan.description
     ? ilan.description.slice(0, 155)
     : `${ilan.city}'de sahiplendirilmek bekleyen ${petType.toLowerCase()} ${ilan.name}. Sahiplendir'de ücretsiz ilan.`
-  const foto = (ilan.listing_media as any[])?.find((m) => m.is_primary)?.media_url
+  const foto = ilan.listing_media?.find((m) => m.is_primary)?.media_url
 
   return {
     title,
@@ -41,7 +41,7 @@ export async function generateMetadata(
       description,
       url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://sahiplendir.tr'}/ilanlar/${id}`,
       type: 'article',
-      ...(foto && { images: [{ url: foto, width: 1200, height: 630, alt: ilan.name }] }),
+      ...(foto && { images: [{ url: foto, width: 1200, height: 630, alt: ilan.name ?? 'İlan görseli' }] }),
     },
     twitter: {
       card: 'summary_large_image',
@@ -96,7 +96,14 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
 
   if (error || !ilan) notFound()
 
-  let ilanSahibi: any = null
+  // Görüntülenme sayacı — hata olursa sayfayı etkilememesi için sonucu yutuyoruz.
+  try {
+    await supabase.rpc('increment_view_count', { listing_uuid: id })
+  } catch {
+    // Görüntülenme sayacı sayfayı engellememeli.
+  }
+
+  let ilanSahibi: { full_name: string | null; trust_score: number } | null = null
   if (ilan.user_id) {
     const { data: userData } = await supabase
       .from('users')
@@ -107,9 +114,9 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
   }
 
   const fotograflar = ilan.listing_media ?? []
-  const tumFotolar = fotograflar.map((f: any) => f.media_url)
-  const healthStatus = ilan.health_status as any
-  const traitsData = ilan.traits as any
+  const tumFotolar = fotograflar.map((f) => f.media_url)
+  const healthStatus = ilan.health_status
+  const traitsData = ilan.traits
 
   const saglikOzellikleri: { icon: string; label: string; active: boolean }[] = [
     { icon: 'vaccines', label: 'Aşılı', active: !!healthStatus?.vaccinated },
@@ -147,7 +154,7 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
           </Link>
         </div>
 
-        <ImageCarousel images={tumFotolar} alt={ilan.name} />
+        <ImageCarousel images={tumFotolar} alt={ilan.name ?? 'İlan'} />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-8">
@@ -160,6 +167,12 @@ export default async function IlanDetay({ params }: { params: Promise<{ id: stri
                   <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold font-headline text-on-surface leading-none">
                     {ilan.name}
                   </h2>
+                  {ilan.view_count > 0 && (
+                    <span className="mt-2 inline-flex items-center gap-1 text-xs text-on-surface-variant">
+                      <span className="material-symbols-outlined text-sm">visibility</span>
+                      {ilan.view_count} kez görüntülendi
+                    </span>
+                  )}
                 </div>
                 <div className="flex gap-2 items-center">
                   <span className="bg-primary-container/10 text-on-primary-container px-4 py-2 rounded-full text-sm font-semibold">

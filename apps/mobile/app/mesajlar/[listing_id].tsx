@@ -12,7 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 
 export default function Chat() {
-  const { listing_id } = useLocalSearchParams<{ listing_id: string }>()
+  const { listing_id, with: withParam } = useLocalSearchParams<{ listing_id: string; with?: string }>()
   const router = useRouter()
   const [mesajlar, setMesajlar] = useState<any[]>([])
   const [yeniMesaj, setYeniMesaj] = useState('')
@@ -20,6 +20,7 @@ export default function Chat() {
   const [ilan, setIlan] = useState<any>(null)
   const [ilanSahibi, setIlanSahibi] = useState<any>(null)
   const [ilanFoto, setIlanFoto] = useState<string | null>(null)
+  const [digerKullaniciId, setDigerKullaniciId] = useState<string>('')
   const [yukleniyor, setYukleniyor] = useState(true)
   const [gonderiyor, setGonderiyor] = useState(false)
   const flatListRef = useRef<FlatList>(null)
@@ -42,19 +43,32 @@ export default function Chat() {
         setIlanFoto(primary?.media_url || ilanData.listing_media[0]?.media_url || null)
       }
 
-      if (ilanData?.user_id) {
-        const { data: owner } = await supabase
+      // Karşı taraf: ilan sahibi değilsek her zaman ilan sahibidir.
+      // İlan sahibiysek, hangi başvuranla konuştuğumuzu `with` parametresinden alırız
+      // (konuşma listesinden gelen navigasyon bunu her zaman ekler).
+      const digerId = ilanData && user.id !== ilanData.user_id ? ilanData.user_id : withParam
+      setDigerKullaniciId(digerId || '')
+
+      if (digerId) {
+        const { data: digerTaraf } = await supabase
           .from('users')
           .select('full_name, trust_score')
-          .eq('id', ilanData.user_id)
+          .eq('id', digerId)
           .single()
-        setIlanSahibi(owner)
+        setIlanSahibi(digerTaraf)
+      }
+
+      if (!digerId) {
+        setMesajlar([])
+        setYukleniyor(false)
+        return
       }
 
       const { data: existingMsgs } = await supabase
         .from('messages')
-        .select('*')
+        .select('id, sender_id, receiver_id, listing_id, content, is_read, created_at')
         .eq('listing_id', listing_id)
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${digerId}),and(sender_id.eq.${digerId},receiver_id.eq.${user.id})`)
         .order('created_at', { ascending: true })
       setMesajlar(existingMsgs ?? [])
       setYukleniyor(false)
@@ -64,40 +78,37 @@ export default function Chat() {
 
   // Realtime subscription
   useEffect(() => {
-    if (!listing_id) return
+    if (!listing_id || !user || !digerKullaniciId) return
     const channel = supabase
-      .channel(`messages-${listing_id}`)
+      .channel(`messages-${listing_id}-${digerKullaniciId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `listing_id=eq.${listing_id}` },
         (payload) => {
-          setMesajlar((prev) => [...prev, payload.new])
+          const yeni = payload.new as any
+          const ikiliyeAit =
+            (yeni.sender_id === user.id && yeni.receiver_id === digerKullaniciId) ||
+            (yeni.sender_id === digerKullaniciId && yeni.receiver_id === user.id)
+          if (!ikiliyeAit) return
+
+          setMesajlar((prev) => prev.find((m) => m.id === yeni.id) ? prev : [...prev, yeni])
           setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100)
         }
       )
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [listing_id])
+  }, [listing_id, user, digerKullaniciId])
 
   async function mesajGonder() {
-    if (!yeniMesaj.trim() || !user || !ilan || gonderiyor) return
+    if (!yeniMesaj.trim() || !user || !ilan || gonderiyor || !digerKullaniciId) return
     setGonderiyor(true)
     const content = yeniMesaj.trim()
     setYeniMesaj('')
 
-    const receiverId = ilan.user_id === user.id
-      ? mesajlar.find((m) => m.sender_id !== user.id)?.sender_id
-      : ilan.user_id
-
-    if (!receiverId) {
-      setGonderiyor(false)
-      return
-    }
-
     await supabase.from('messages').insert({
       listing_id,
       sender_id: user.id,
-      receiver_id: receiverId,
+      receiver_id: digerKullaniciId,
       content,
     })
     setGonderiyor(false)

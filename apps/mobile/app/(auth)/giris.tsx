@@ -51,18 +51,15 @@ export default function Giris() {
     }
     setYukleniyor(true)
     setMesaj('')
-    const { data, error } = await supabase.auth.signUp({ email, password: sifre })
+    const { error } = await supabase.auth.signUp({
+      email,
+      password: sifre,
+      options: { data: { full_name: isim } },
+    })
     if (error) {
       setMesaj('Hata: ' + error.message)
       setMesajTuru('hata')
     } else {
-      if (data.user && isim) {
-        await supabase.from('users').upsert({
-          id: data.user.id,
-          full_name: isim,
-          trust_score: 100,
-        })
-      }
     }
     setYukleniyor(false)
   }

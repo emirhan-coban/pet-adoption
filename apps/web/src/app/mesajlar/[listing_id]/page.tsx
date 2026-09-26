@@ -1,19 +1,30 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase'
+import type { Database } from '@/lib/database.types'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import BottomNav from '../../components/BottomNav'
+
+type Mesaj = Pick<Database['public']['Tables']['messages']['Row'], 'id' | 'sender_id' | 'receiver_id' | 'listing_id' | 'content' | 'is_read' | 'created_at'>
+type Ilan = Database['public']['Tables']['listings']['Row'] & {
+    listing_media: Pick<Database['public']['Tables']['listing_media']['Row'], 'media_url' | 'is_primary'>[]
+}
+type DigerTaraf = { full_name: string | null; trust_score: number }
 
 export default function Mesajlar({ params }: { params: Promise<{ listing_id: string }> }) {
     const supabase = createClient()
-    const [mesajlar, setMesajlar] = useState<any[]>([])
+    const searchParams = useSearchParams()
+    const [mesajlar, setMesajlar] = useState<Mesaj[]>([])
     const [yeniMesaj, setYeniMesaj] = useState('')
-    const [user, setUser] = useState<any>(null)
-    const [ilan, setIlan] = useState<any>(null)
-    const [ilanSahibi, setIlanSahibi] = useState<any>(null)
+    const [user, setUser] = useState<User | null>(null)
+    const [ilan, setIlan] = useState<Ilan | null>(null)
+    const [ilanSahibi, setIlanSahibi] = useState<DigerTaraf | null>(null)
     const [ilanFoto, setIlanFoto] = useState<string | null>(null)
     const [listingId, setListingId] = useState<string>('')
+    const [digerKullaniciId, setDigerKullaniciId] = useState<string>('')
     const [yukleniyor, setYukleniyor] = useState(true)
     const [gonderiyor, setGonderiyor] = useState(false)
     const altRef = useRef<HTMLDivElement>(null)
@@ -36,23 +47,37 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
             setIlan(ilan)
 
             if (ilan?.listing_media) {
-                const primary = ilan.listing_media.find((m: any) => m.is_primary)
+                const primary = ilan.listing_media.find((m) => m.is_primary)
                 setIlanFoto(primary?.media_url || ilan.listing_media[0]?.media_url || null)
             }
 
-            if (ilan?.user_id) {
-                const { data: owner } = await supabase
+            // Karşı taraf: ilan sahibi değilsek her zaman ilan sahibidir.
+            // İlan sahibiysek, hangi başvuranla konuştuğumuzu ?with= parametresinden alırız
+            // (konuşma listesinden gelen link bunu her zaman ekler).
+            const withParam = searchParams.get('with')
+            const digerId = ilan && user.id !== ilan.user_id ? ilan.user_id : withParam
+            setDigerKullaniciId(digerId || '')
+
+            if (digerId) {
+                const { data: digerTaraf } = await supabase
                     .from('users')
                     .select('full_name, trust_score')
-                    .eq('id', ilan.user_id)
+                    .eq('id', digerId)
                     .single()
-                setIlanSahibi(owner)
+                setIlanSahibi(digerTaraf)
+            }
+
+            if (!digerId) {
+                setMesajlar([])
+                setYukleniyor(false)
+                return
             }
 
             const { data: mevcutMesajlar } = await supabase
                 .from('messages')
-                .select('*')
+                .select('id, sender_id, receiver_id, listing_id, content, is_read, created_at')
                 .eq('listing_id', listing_id)
+                .or(`and(sender_id.eq.${user.id},receiver_id.eq.${digerId}),and(sender_id.eq.${digerId},receiver_id.eq.${user.id})`)
                 .order('created_at', { ascending: true })
             setMesajlar(mevcutMesajlar ?? [])
             setYukleniyor(false)
@@ -61,23 +86,29 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
     }, [])
 
     useEffect(() => {
-        if (!listingId) return
+        if (!listingId || !user || !digerKullaniciId) return
         const kanal = supabase
-            .channel(`messages-${listingId}`)
+            .channel(`messages-${listingId}-${digerKullaniciId}`)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
                 table: 'messages',
                 filter: `listing_id=eq.${listingId}`,
             }, (payload) => {
+                const yeni = payload.new as Mesaj
+                const ikiliyeAit =
+                    (yeni.sender_id === user.id && yeni.receiver_id === digerKullaniciId) ||
+                    (yeni.sender_id === digerKullaniciId && yeni.receiver_id === user.id)
+                if (!ikiliyeAit) return
+
                 setMesajlar((prev) => {
-                    if (prev.find((m) => m.id === payload.new.id)) return prev
-                    return [...prev, payload.new]
+                    if (prev.find((m) => m.id === yeni.id)) return prev
+                    return [...prev, yeni]
                 })
             })
             .subscribe()
         return () => { supabase.removeChannel(kanal) }
-    }, [listingId])
+    }, [listingId, user, digerKullaniciId])
 
     useEffect(() => {
         altRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -85,34 +116,20 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
 
     async function mesajGonder() {
         if (!yeniMesaj.trim() || !ilan || !user || gonderiyor) return
+        if (!digerKullaniciId) {
+            alert('Bu ilana henüz kimse mesaj atmamış.')
+            return
+        }
         setGonderiyor(true)
 
-        if (ilan.user_id === user.id) {
-            const baskaMesaj = mesajlar.find((m) => m.sender_id !== user.id)
-            if (!baskaMesaj) {
-                alert('Bu ilana henüz kimse mesaj atmamış.')
-                setGonderiyor(false)
-                return
-            }
+        const { data: yeniM } = await supabase.from('messages').insert({
+            sender_id: user.id,
+            receiver_id: digerKullaniciId,
+            listing_id: listingId,
+            content: yeniMesaj.trim(),
+        }).select().single()
 
-            const { data: yeniM } = await supabase.from('messages').insert({
-                sender_id: user.id,
-                receiver_id: baskaMesaj.sender_id,
-                listing_id: listingId,
-                content: yeniMesaj.trim(),
-            }).select().single()
-
-            if (yeniM) setMesajlar((prev) => prev.find((m) => m.id === yeniM.id) ? prev : [...prev, yeniM])
-        } else {
-            const { data: yeniM } = await supabase.from('messages').insert({
-                sender_id: user.id,
-                receiver_id: ilan.user_id,
-                listing_id: listingId,
-                content: yeniMesaj.trim(),
-            }).select().single()
-
-            if (yeniM) setMesajlar((prev) => prev.find((m) => m.id === yeniM.id) ? prev : [...prev, yeniM])
-        }
+        if (yeniM) setMesajlar((prev) => prev.find((m) => m.id === yeniM.id) ? prev : [...prev, yeniM])
 
         setYeniMesaj('')
         setGonderiyor(false)
@@ -135,8 +152,8 @@ export default function Mesajlar({ params }: { params: Promise<{ listing_id: str
         return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
     }
 
-    function grupla(mesajlar: any[]) {
-        const groups: { tarih: string; mesajlar: any[] }[] = []
+    function grupla(mesajlar: Mesaj[]) {
+        const groups: { tarih: string; mesajlar: Mesaj[] }[] = []
         let currentDate = ''
 
         for (const m of mesajlar) {

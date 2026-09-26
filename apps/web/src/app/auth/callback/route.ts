@@ -5,6 +5,7 @@ export async function GET(request: NextRequest) {
     const { searchParams, origin } = new URL(request.url)
     const code = searchParams.get('code')
     const next = searchParams.get('next') ?? '/'
+    const response = NextResponse.redirect(new URL('/', origin))
 
     if (code) {
         const supabase = createServerClient(
@@ -16,8 +17,11 @@ export async function GET(request: NextRequest) {
                         return request.cookies.getAll()
                     },
                     setAll(cookiesToSet) {
-                        cookiesToSet.forEach(({ name, value, options }) =>
+                        cookiesToSet.forEach(({ name, value }) =>
                             request.cookies.set(name, value)
+                        )
+                        cookiesToSet.forEach(({ name, value, options }) =>
+                            response.cookies.set(name, value, options)
                         )
                     },
                 },
@@ -27,9 +31,13 @@ export async function GET(request: NextRequest) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (!error) {
-            // Only allow relative paths to prevent open redirect attacks
-            const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : '/'
-            return NextResponse.redirect(`${origin}${safeNext}`)
+            // Yalnızca aynı origin'e ait, backslash içermeyen yollar kabul edilir.
+            // Backslash, bazı URL ayrıştırıcılarında host ayracına dönüşebilir.
+            const safeNext = next.startsWith('/') && !next.startsWith('//') && !next.includes('\\')
+                ? next
+                : '/'
+            response.headers.set('Location', new URL(safeNext, origin).toString())
+            return response
         }
     }
 

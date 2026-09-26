@@ -6,10 +6,10 @@ export default function CookieConsent() {
     const [isVisible, setIsVisible] = useState(false)
 
     useEffect(() => {
-        const consent = localStorage.getItem('cookie-consent')
-        if (!consent) {
-            setIsVisible(true)
-        }
+        const timer = window.setTimeout(() => {
+            setIsVisible(!localStorage.getItem('cookie-consent'))
+        }, 0)
+        return () => window.clearTimeout(timer)
     }, [])
 
     const handleAccept = () => {

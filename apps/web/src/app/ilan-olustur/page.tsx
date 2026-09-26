@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
+import type { PetGender, PetType } from '@/lib/database.types'
 import Header from '../components/Header'
 import BottomNav from '../components/BottomNav'
 
@@ -43,6 +44,7 @@ function checkCommercialSale(text: string): boolean {
 export default function IlanOlustur() {
     const supabase = createClient()
     const objectUrlsRef = useRef<string[]>([])
+    const [fotoOnizlemeleri, setFotoOnizlemeleri] = useState<string[]>([])
 
     const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
     const [yukleniyor, setYukleniyor] = useState(false)
@@ -80,7 +82,7 @@ export default function IlanOlustur() {
         }
     }, [])
 
-    function guncelle(alan: string, deger: any) {
+    function guncelle(alan: keyof typeof form, deger: string | boolean) {
         setForm((prev) => ({ ...prev, [alan]: deger }))
     }
 
@@ -145,13 +147,13 @@ export default function IlanOlustur() {
             return
         }
 
-        let pet_type_db = 'other';
+        let pet_type_db: PetType = 'other';
         if (form.pet_type === 'Köpek') pet_type_db = 'dog';
         else if (form.pet_type === 'Kedi') pet_type_db = 'cat';
         else if (form.pet_type === 'Kuş') pet_type_db = 'bird';
         else if (form.pet_type === 'Tavşan') pet_type_db = 'rabbit';
 
-        let gender_db = 'unknown';
+        let gender_db: PetGender = 'unknown';
         if (form.gender === 'Erkek') gender_db = 'male';
         else if (form.gender === 'Dişi') gender_db = 'female';
 
@@ -225,6 +227,7 @@ export default function IlanOlustur() {
             URL.revokeObjectURL(objectUrlsRef.current[indexToRemove])
         }
         objectUrlsRef.current = objectUrlsRef.current.filter((_, i) => i !== indexToRemove)
+        setFotoOnizlemeleri((prev) => prev.filter((_, i) => i !== indexToRemove))
         setFotograflar((prev) => prev.filter((_, index) => index !== indexToRemove))
     }
 
@@ -238,6 +241,7 @@ export default function IlanOlustur() {
         const newFiles = files.slice(0, remaining)
         const urls = newFiles.map(f => URL.createObjectURL(f))
         objectUrlsRef.current = [...objectUrlsRef.current, ...urls]
+        setFotoOnizlemeleri((prev) => [...prev, ...urls])
         setFotograflar([...fotograflar, ...newFiles])
         setValidationErrors([])
     }
@@ -442,7 +446,7 @@ export default function IlanOlustur() {
 
                                 {fotograflar.map((f, i) => (
                                     <div key={i} className="aspect-square rounded-xl overflow-hidden relative group bg-surface-container-high">
-                                        <img src={objectUrlsRef.current[i] || URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />
+                                        <img src={fotoOnizlemeleri[i]} alt={f.name} className="w-full h-full object-cover" />
                                         <button
                                             onClick={() => removePhoto(i)}
                                             className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"

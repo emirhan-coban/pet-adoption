@@ -220,7 +220,7 @@ export default function Kosullar() {
                             9. Fikri Mülkiyet
                         </h2>
                         <p className="text-on-surface-variant leading-relaxed">
-                            Platformun tasarımı, logosu, yazılımı ve içeriği Sahiplendir'e aittir. 
+                            Platformun tasarımı, logosu, yazılımı ve içeriği Sahiplendir&apos;e aittir.
                             Kullanıcılar tarafından yüklenen ilanlar ve fotoğraflar, kullanıcıların mülkiyetindedir. 
                             Platform izinsiz kopyalanamaz veya çoğaltılamaz.
                         </p>
@@ -236,7 +236,7 @@ export default function Kosullar() {
                         </p>
                         <ul className="list-disc list-inside space-y-2 text-on-surface-variant">
                             <li>Türkiye Cumhuriyeti kanunları uygulanır</li>
-                            <li>Yetkili mahkemeler Türkiye'deki mahkemelerdir</li>
+                            <li>Yetkili mahkemeler Türkiye&apos;deki mahkemelerdir</li>
                             <li>Uyuşmazlıklar öncelikle uzlaşma yoluyla çözülmeye çalışılır</li>
                         </ul>
                     </section>
