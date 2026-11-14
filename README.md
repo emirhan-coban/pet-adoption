@@ -1,3 +1,19 @@
+# 🐾 Pet Adoption Platform
+
+Pet adoption platform with a **Next.js web app** and a **React Native (Expo) mobile app** sharing one **Supabase** backend (Postgres, Auth, Storage, Row Level Security).
+
+[Live demo](https://pet-adoption-three-dusky.vercel.app)
+
+| Part | Stack |
+|---|---|
+| `apps/web` | Next.js, TypeScript |
+| `apps/mobile` | React Native, Expo, TypeScript |
+| `supabase` | SQL migrations, RLS policies, storage rules, auth triggers |
+
+The sections below (Turkish) describe the Supabase setup order.
+
+---
+
 # 🐾 Hayvan Sahiplendirme Platformu — Supabase Kurulum Rehberi
 
 ## Dosya Sırası
