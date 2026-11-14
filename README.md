@@ -2,8 +2,6 @@
 
 Pet adoption platform with a **Next.js web app** and a **React Native (Expo) mobile app** sharing one **Supabase** backend (Postgres, Auth, Storage, Row Level Security).
 
-[Live demo](https://pet-adoption-three-dusky.vercel.app)
-
 | Part | Stack |
 |---|---|
 | `apps/web` | Next.js, TypeScript |
